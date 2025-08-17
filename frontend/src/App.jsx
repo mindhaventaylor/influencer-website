@@ -18,7 +18,7 @@ function App() {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        setUser({ email: session.user.email, token: session.access_token });
+        setUser({ id: session.user.id, email: session.user.email, token: session.access_token });
         // Don't automatically navigate to ChatList here if we are in the middle of onboarding
         if (currentScreen !== "SignUp") {
             setCurrentScreen("ChatList");
@@ -32,7 +32,7 @@ function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        setUser({ email: session.user.email, token: session.access_token });
+        setUser({ id: session.user.id, email: session.user.email, token: session.access_token });
         // Don't automatically navigate to ChatList here if we are in the middle of onboarding
         if (currentScreen !== "SignUp") {
             setCurrentScreen("ChatList");
@@ -105,7 +105,7 @@ function App() {
       screenComponent = <ChatList onViewChat={handleViewChat} onGoToSettings={handleGoToSettings} />;
       break;
     case "ChatThread":
-      screenComponent = <ChatThread onGoBack={handleGoBack} influencerId={influencerId} userToken={user?.token} />;
+      screenComponent = <ChatThread onGoBack={handleGoBack} influencerId={influencerId} userToken={user?.token} userId={user?.id} />;
       break;
     case "SettingsScreen":
       screenComponent = <SettingsScreen onGoBack={handleGoBack} onGoToChat={handleGoToChat} onSignOut={handleSignOut} />;

@@ -44,11 +44,12 @@ const api = {
       .single();
   },
 
-  async getChatThread(influencerId, limit = 20, offset = 0) {
+  async getChatThread(influencerId, userId, limit = 20, offset = 0) {
     return supabase
       .from('chat_messages')
       .select('*')
       .eq('influencer_id', influencerId)
+      .eq('user_id', userId)
       .order('created_at', { ascending: true })
       .range(offset, offset + limit - 1);
   },

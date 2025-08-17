@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Send } from 'lucide-react';
 import api from '../../api';
 
-const ChatThread = ({ onGoBack, influencerId, userToken }) => {
+const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
   const [messages, setMessages] = useState([]);
   const [influencer, setInfluencer] = useState(null);
   const [newMessage, setNewMessage] = useState('');
@@ -22,7 +22,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken }) => {
       try {
         setLoading(true);
         const [{ data: messagesData, error: messagesError }, { data: influencerData, error: influencerError }] = await Promise.all([
-          api.getChatThread(influencerId),
+          api.getChatThread(influencerId, userId),
           api.getInfluencerById(influencerId)
         ]);
         if (messagesError) throw messagesError;
@@ -36,10 +36,10 @@ const ChatThread = ({ onGoBack, influencerId, userToken }) => {
       }
     };
 
-    if (influencerId) {
+    if (influencerId && userId) {
       fetchData();
     }
-  }, [influencerId]);
+  }, [influencerId, userId]);
 
   useEffect(() => {
     scrollToBottom();
