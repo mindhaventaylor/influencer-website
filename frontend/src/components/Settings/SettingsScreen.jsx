@@ -1,7 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const SettingsScreen = ({ onGoToChat, onSignOut }) => {
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   return (
     <div className="flex flex-col h-screen bg-black text-white">
       <header className="flex items-center p-4 border-b border-gray-800">
@@ -9,42 +23,6 @@ const SettingsScreen = ({ onGoToChat, onSignOut }) => {
       </header>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold">Account</h2>
-          <div className="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-            <span>Manage Subscription</span>
-            <span>&rarr;</span>
-          </div>
-          <div className="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-            <span>Delete Account</span>
-            <span>&rarr;</span>
-          </div>
-          <Button onClick={onSignOut} className="w-full mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-            Log Out
-          </Button>
-        </div>
-
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold">Preferences</h2>
-          <div className="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-            <span>Notifications</span>
-            <span>&rarr;</span>
-          </div>
-          <div className="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-            <span>Chat History</span>
-            <span>&rarr;</span>
-          </div>
-          <div className="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-            <span>Display Settings</span>
-            <span>&rarr;</span>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold">Support</h2>
-          <div className="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
-            <span>Help & FAQs</span>
-            <span>&rarr;</span>
-          </div>
           <div className="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
             <span>Contact Us</span>
             <span>&rarr;</span>
@@ -52,7 +30,6 @@ const SettingsScreen = ({ onGoToChat, onSignOut }) => {
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold">Legal</h2>
           <div className="bg-gray-800 p-3 rounded-lg flex justify-between items-center">
             <span>Terms of Service</span>
             <span>&rarr;</span>
@@ -62,6 +39,40 @@ const SettingsScreen = ({ onGoToChat, onSignOut }) => {
             <span>&rarr;</span>
           </div>
         </div>
+      </div>
+      <div className="p-4 space-y-2">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="w-full bg-red-600 hover:bg-red-700">Delete Account</Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => console.log("Account deleted")}>Continue</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" className="w-full bg-red-600 hover:bg-red-700" onClick={() => setShowLogoutConfirm(true)}>Log Out</Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onSignOut}>Log Out</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
       <footer className="flex justify-around p-4 border-t border-gray-800">
         <button className="flex flex-col items-center text-gray-500" onClick={onGoToChat}>
