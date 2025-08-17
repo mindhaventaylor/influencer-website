@@ -9,16 +9,23 @@ import SettingsScreen from './components/Settings/SettingsScreen';
 import { supabase } from './lib/supabaseClient';
 
 function App() {
-  const [currentScreen, setCurrentScreen] = useState("SignIn"); // Initial screen
+  const [currentScreen, setCurrentScreen] = useState("OnboardingProfile"); // Initial screen changed
   const [user, setUser] = useState(null);
   const [influencerId, setInfluencerId] = useState(null);
+  const [profileData, setProfileData] = useState(null);
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUser({ email: session.user.email, token: session.access_token });
-        setCurrentScreen("ChatList");
+        // Don't automatically navigate to ChatList here if we are in the middle of onboarding
+        if (currentScreen !== "SignUp") {
+            setCurrentScreen("ChatList");
+        }
+      } else {
+        setUser(null);
+        setCurrentScreen("SignIn");
       }
     };
     getSession();
@@ -26,7 +33,10 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setUser({ email: session.user.email, token: session.access_token });
-        setCurrentScreen("ChatList");
+        // Don't automatically navigate to ChatList here if we are in the middle of onboarding
+        if (currentScreen !== "SignUp") {
+            setCurrentScreen("ChatList");
+        }
       } else {
         setUser(null);
         setCurrentScreen("SignIn");
@@ -43,13 +53,14 @@ function App() {
 
   const handleSignUpSuccess = (userData) => {
     setUser(userData);
-    setCurrentScreen("OnboardingProfile");
+    setCurrentScreen("ChatList"); // Go to chat list after successful sign up
   };
 
-  const handleOnboardingComplete = () => {
-    setCurrentScreen("ChatList");
+  const handleOnboardingNext = (data) => {
+    setProfileData(data);
+    setCurrentScreen("SignUp");
   };
-
+  
   const handleViewChat = (id) => {
     setInfluencerId(id);
     setCurrentScreen("ChatThread");
@@ -70,27 +81,25 @@ function App() {
   };
 
   const handleGoBack = () => {
-    // Simple back navigation for demo purposes
-    if (currentScreen === "OnboardingProfile" || currentScreen === "ChatThread" || currentScreen === "SettingsScreen") {
+    if (currentScreen === "SignUp") {
+      setCurrentScreen("OnboardingProfile");
+    } else if (currentScreen === "ChatThread" || currentScreen === "SettingsScreen") {
       setCurrentScreen("ChatList");
-    } else if (currentScreen === "SignUp") {
-      setCurrentScreen("SignIn");
+    } else {
+        setCurrentScreen("SignIn");
     }
   };
 
   let screenComponent;
   switch (currentScreen) {
     case "SignIn":
-      screenComponent = <SignIn onSignInSuccess={handleSignInSuccess} onGoToSignUp={() => {
-        console.log("Navigating to SignUp");
-        setCurrentScreen("SignUp");
-      }} />;
+      screenComponent = <SignIn onSignInSuccess={handleSignInSuccess} onGoToSignUp={() => setCurrentScreen("OnboardingProfile")} />;
       break;
     case "SignUp":
-      screenComponent = <SignUp onSignUpSuccess={handleSignUpSuccess} onGoBack={handleGoBack} />;
+      screenComponent = <SignUp onSignUpSuccess={handleSignUpSuccess} onGoBack={handleGoBack} profileData={profileData} />;
       break;
     case "OnboardingProfile":
-      screenComponent = <OnboardingProfile onOnboardingComplete={handleOnboardingComplete} />;
+      screenComponent = <OnboardingProfile onNext={handleOnboardingNext} />;
       break;
     case "ChatList":
       screenComponent = <ChatList onViewChat={handleViewChat} onGoToSettings={handleGoToSettings} />;
@@ -102,7 +111,7 @@ function App() {
       screenComponent = <SettingsScreen onGoBack={handleGoBack} onGoToChat={handleGoToChat} onSignOut={handleSignOut} />;
       break;
     default:
-      screenComponent = <SignIn onSignInSuccess={handleSignInSuccess} onGoToSignUp={() => setCurrentScreen("SignUp")} />;
+      screenComponent = <SignIn onSignInSuccess={handleSignInSuccess} onGoToSignUp={() => setCurrentScreen("OnboardingProfile")} />;
   }
 
   return (

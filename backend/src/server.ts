@@ -164,7 +164,7 @@ app.listen(PORT, () => {
 
 // Supabase Auth routes
 app.post("/api/auth/signup", async (req: any, res: any) => {
-  const { email, password, username, display_name } = req.body;
+  const { email, password, username, display_name, gender_identity, pronouns } = req.body;
   
   // Step 1: Create the user in Supabase Auth
   const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -175,21 +175,27 @@ app.post("/api/auth/signup", async (req: any, res: any) => {
   if (authError) return res.status(400).json({ error: authError.message });
   if (!authData.user) return res.status(500).json({ error: "User not created in auth." });
 
-  // Step 2: Insert the user profile into the public.users table
-  const { error: insertError } = await supabase
+  // Step 2: Insert the user profile into the public.users table using the service role client
+  const { error: upsertError } = await supabaseServiceRole
     .from('users')
-    .insert([{ 
+    .upsert([{ 
       id: authData.user.id, 
       email: authData.user.email,
       username: username,
-      display_name: display_name
+      display_name: display_name,
+      gender_identity: gender_identity,
+      pronouns: pronouns,
     }]);
 
-  if (insertError) {
-    // If the profile insert fails, we should delete the auth user to keep things clean
-    await supabase.auth.admin.deleteUser(authData.user.id);
-    console.error("Error inserting user into public.users:", insertError);
-    return res.status(500).json({ error: "Failed to create user profile." });
+  if (upsertError) {
+    // If the profile upsert fails, delete the auth user using the service role client and return the error
+    try {
+      await supabaseServiceRole.auth.admin.deleteUser(authData.user.id);
+    } catch (deleteErr) {
+      console.error('Failed to delete auth user after profile upsert error:', deleteErr);
+    }
+    console.error('Error upserting user into public.users:', upsertError);
+    return res.status(500).json({ error: 'Failed to create user profile.' });
   }
 
   res.json(authData);
