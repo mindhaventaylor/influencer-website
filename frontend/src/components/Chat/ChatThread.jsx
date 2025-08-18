@@ -58,7 +58,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
     setIsAiReplying(true);
 
     try {
-      const aiMessage = await api.postMessage(influencerId, userMessageContent, userToken);
+      const aiMessage = await api.postMessage(influencerId, userMessageContent, userId);
       setMessages(prevMessages => [...prevMessages, aiMessage]);
     } catch (err) {
       setError(err.message);
@@ -133,7 +133,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
                 handleSendMessage();
               }
             }}
-            className="flex-1 p-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 mr-2"
+            className="flex-1 p-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500"
           />
           <Button onClick={handleSendMessage} className="p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
             <Send className="h-6 w-6" />
