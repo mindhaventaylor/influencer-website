@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send } from 'lucide-react';
+import MessageFormatter from '@/components/ui/MessageFormatter';
 import api from '../../api';
 
 const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
@@ -102,7 +103,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
                   : 'bg-gray-800 text-white'
               }`}
             >
-              {message.content}
+              <MessageFormatter content={message.content} />
             </div>
           </div>
         ))}
