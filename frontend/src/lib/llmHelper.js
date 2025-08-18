@@ -4,7 +4,7 @@ const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
 export async function generateInfluencerReply(influencerModelPreset, priorMessages, latestUserMessage) {
   if (!OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY not set.');
+    throw new Error('OPENAI_API_KEY not set. Check your .env file and restart the dev server.');
   }
   
   const openai = new OpenAI({
@@ -36,7 +36,7 @@ export async function generateInfluencerReply(influencerModelPreset, priorMessag
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-5-mini', 
+      model: 'gpt-4o-mini', 
       messages: messages,
       max_tokens: 1000,
       temperature: 0.7
