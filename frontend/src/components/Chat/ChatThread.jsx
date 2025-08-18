@@ -91,21 +91,32 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
         )}
       </header>
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
+        {messages.flatMap((message) => {
+          if (message.content && message.content.includes('\n')) {
+            return message.content.split('\n').map((line, index) => ({
+              ...message,
+              id: `${message.id}-${index}`,
+              content: line,
+            }));
+          }
+          return message;
+        }).map((message) => (
+          message.content.trim() && (
             <div
-              className={`p-3 rounded-lg max-w-xs lg:max-w-md ${
-                message.sender === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-800 text-white'
-              }`}
+              key={message.id}
+              className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <MessageFormatter content={message.content} />
+              <div
+                className={`p-3 rounded-lg max-w-xs lg:max-w-md ${
+                  message.sender === 'user'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-800 text-white'
+                }`}
+              >
+                <MessageFormatter content={message.content} />
+              </div>
             </div>
-          </div>
+          )
         ))}
         {isAiReplying && (
           <div className="flex items-end">
