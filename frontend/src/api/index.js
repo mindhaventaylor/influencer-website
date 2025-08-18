@@ -6,8 +6,7 @@ const api = {
   },
 
   async signUp(userData) {
-    const API_BASE_URL = 'http://localhost:3000/api';
-    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+    const response = await fetch(`/api/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData),
@@ -57,9 +56,8 @@ const api = {
   async postMessage(influencerId, content, token) {
     // For local development, this points to your local backend.
     // For production, you should replace this with your deployed backend URL.
-    const API_BASE_URL = 'http://localhost:3000/api';
     const response = await fetch(
-      `${API_BASE_URL}/conversations/${influencerId}/messages`,
+      `/api/conversations/${influencerId}/messages`,
       {
         method: "POST",
         headers: {

@@ -24,7 +24,7 @@ const SignIn = ({ onSignInSuccess, onGoToSignUp }) => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-4">
       <h1 className="text-3xl font-bold mb-8">Welcome to Project Taylor</h1>
-      <img src="/path/to/your/avatar.png" alt="Avatar" className="w-24 h-24 rounded-full mb-8" />
+      <img src="/default_avatar.png" alt="Avatar" className="w-24 h-24 rounded-full mb-8" />
       <h2 className="text-2xl font-semibold mb-6">Sign In</h2>
       <div className="w-full max-w-sm space-y-4">
         <Input

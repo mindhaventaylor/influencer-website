@@ -65,7 +65,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
         </Button>
       </div>
       <h1 className="text-3xl font-bold mb-8">Create Account</h1>
-      <img src="/path/to/your/avatar.png" alt="Avatar" className="w-24 h-24 rounded-full mb-8" />
+      <img src="/default_avatar.png" alt="Avatar" className="w-24 h-24 rounded-full mb-8" />
       <h2 className="text-2xl font-semibold mb-6">Welcome to Project Taylor</h2>
       <div className="w-full max-w-sm space-y-4">
         <Input

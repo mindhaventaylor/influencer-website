@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/api/auth/(.*)", "destination": "/api/server" },
+    { "source": "/api/conversations/(.*)", "destination": "/api/server" },
+    { "source": "/api/users/(.*)", "destination": "/api/server" }
+  ]
+}
