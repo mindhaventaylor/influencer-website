@@ -81,13 +81,73 @@ export async function POST(request: NextRequest) {
     const userId = user.id;
     console.log(`Authenticated user ID: ${userId}`);
 
-    // 1. Insert user message (using user client to respect RLS)
+    // 1. Get or create conversation
+    console.log('Getting or creating conversation...');
+    let conversationId;
+    
+    // First, try to get existing conversation
+    const { data: existingConversation, error: conversationError } = await supabaseService
+      .from('conversations')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('influencer_id', influencerId)
+      .single();
+
+    if (conversationError && conversationError.code !== 'PGRST116') {
+      console.error('Error fetching conversation:', conversationError);
+      throw new Error(`Failed to fetch conversation: ${conversationError.message}`);
+    }
+
+    if (existingConversation) {
+      conversationId = existingConversation.id;
+      console.log('Using existing conversation:', conversationId);
+      
+      // Check if user has tokens left
+      const { data: conversationData, error: convError } = await supabaseService
+        .from('conversations')
+        .select('tokens')
+        .eq('id', conversationId)
+        .single();
+
+      if (convError) {
+        console.error('Error fetching conversation tokens:', convError);
+        throw new Error(`Failed to fetch conversation data: ${convError.message}`);
+      }
+
+      if ((conversationData.tokens || 0) <= 0) {
+        return NextResponse.json({ 
+          error: 'No tokens remaining. Please purchase a plan to continue chatting.' 
+        }, { status: 402 }); // 402 Payment Required
+      }
+    } else {
+      // Create new conversation
+      const { data: newConversation, error: createError } = await supabaseService
+        .from('conversations')
+        .insert({
+          user_id: userId,
+          influencer_id: influencerId,
+          tokens: 100 // Give user some initial tokens
+        })
+        .select('id')
+        .single();
+
+      if (createError) {
+        console.error('Error creating conversation:', createError);
+        throw new Error(`Failed to create conversation: ${createError.message}`);
+      }
+      
+      conversationId = newConversation.id;
+      console.log('Created new conversation:', conversationId);
+    }
+
+    // 2. Insert user message (using user client to respect RLS)
     console.log('Attempting to insert user message...');
     const { data: userMessage, error: userMessageError } = await supabaseUser
       .from('chat_messages')
       .insert({
         user_id: userId,
         influencer_id: influencerId,
+        conversation_id: conversationId,
         sender: 'user',
         content: content,
       })
@@ -141,6 +201,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: userId,
         influencer_id: influencerId,
+        conversation_id: conversationId,
         sender: 'influencer',
         content: influencerReplyContent,
       })
@@ -152,6 +213,35 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to insert AI message: ${aiMessageError.message}`);
     }
     console.log('AI message inserted successfully:', aiMessage);
+
+    // 6. Deduct tokens from conversation (1 token per message sent)
+    console.log('Deducting tokens from conversation...');
+    const tokensPerMessage = 1; // You can adjust this based on your token pricing
+    
+    // First get current token count
+    const { data: currentConversation, error: fetchError } = await supabaseService
+      .from('conversations')
+      .select('tokens')
+      .eq('id', conversationId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching current tokens:', fetchError);
+    } else {
+      const newTokenCount = Math.max((currentConversation.tokens || 0) - tokensPerMessage, 0);
+      
+      const { error: tokenUpdateError } = await supabaseService
+        .from('conversations')
+        .update({ tokens: newTokenCount })
+        .eq('id', conversationId);
+
+      if (tokenUpdateError) {
+        console.error('Error updating tokens:', tokenUpdateError);
+        // Don't throw here - the message was sent successfully, token update is secondary
+      } else {
+        console.log(`✅ Deducted ${tokensPerMessage} token(s) from conversation (${currentConversation.tokens} → ${newTokenCount})`);
+      }
+    }
 
     return NextResponse.json({
       userMessage,

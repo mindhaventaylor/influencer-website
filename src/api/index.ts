@@ -24,21 +24,30 @@ const api = {
     if (authError) throw new Error(authError.message);
     if (!authData.user) throw new Error("User not created in auth.");
 
-    // Step 2: Insert the user profile into the public.users table
-    const { error: insertError } = await supabase
-      .from('users')
-      .insert([{ 
-        id: authData.user.id, 
-        email: authData.user.email,
-        username: username,
-        display_name: display_name
-      }]);
+    // Step 2: Create user profile via API endpoint (server-side with elevated permissions)
+    if (authData.session) {
+      try {
+        const response = await fetch('/api/users/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authData.session.access_token}`,
+          },
+          body: JSON.stringify({
+            email: authData.user.email,
+            username,
+            display_name
+          }),
+        });
 
-    if (insertError) {
-      console.error("Error inserting user into public.users:", insertError);
-      // Optional: Clean up the user from auth if profile insertion fails
-      // await supabase.auth.api.deleteUser(authData.user.id);
-      throw new Error("Failed to create user profile.");
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to create user profile');
+        }
+      } catch (profileError) {
+        console.error("Error creating user profile:", profileError);
+        // Don't throw here - user is created in auth, profile can be created later
+      }
     }
 
     return { data: authData, error: null };

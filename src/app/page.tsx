@@ -153,7 +153,7 @@ export default function Home() {
 
   const handleGoBack = () => {
     if (currentScreen === "SignUp") {
-      setCurrentScreen("OnboardingProfile");
+      setCurrentScreen("SignIn");
     } else if (currentScreen === "ChatThread" || currentScreen === "SettingsScreen" || currentScreen === "ProfileScreen") {
       setCurrentScreen("ChatList");
     } else if (currentScreen === "DeleteAccountScreen") {
@@ -174,7 +174,7 @@ export default function Home() {
       screenComponent = <SignUp onSignUpSuccess={handleSignUpSuccess} onGoBack={handleGoBack} profileData={profileData} />;
       break;
     case "OnboardingProfile":
-      screenComponent = <OnboardingProfile onNext={handleOnboardingNext} />;
+      screenComponent = <OnboardingProfile onNext={handleOnboardingNext} onGoBack={() => setCurrentScreen("SignIn")} />;
       break;
     case "ChatList":
       screenComponent = <ChatList onViewChat={handleViewChat} onGoToSettings={handleGoToSettings} onGoToProfile={handleGoToProfile} />;

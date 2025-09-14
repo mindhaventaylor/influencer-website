@@ -58,7 +58,8 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
       const { data, error } = await api.signUp({ 
         email, 
         password,
-        ...profileData
+        username: profileData?.username || '',
+        display_name: profileData?.display_name || ''
       });
       if (error) throw error;
       

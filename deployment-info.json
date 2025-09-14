@@ -1,0 +1,61 @@
+{
+  "influencer": {
+    "id": "teste",
+    "name": "teste",
+    "handle": "teste",
+    "displayName": "teste",
+    "bio": "teste",
+    "avatarUrl": "/images/teste-avatar.jpg",
+    "coverImageUrl": "/images/teste-cover.jpg",
+    "websiteUrl": "http://taylor.devopai.net/",
+    "socialMedia": {
+      "instagram": "http://taylor.devopai.net/",
+      "twitter": "http://taylor.devopai.net/",
+      "tiktok": "http://taylor.devopai.net/"
+    }
+  },
+  "deployment": {
+    "domain": "taylor.devopai.net",
+    "baseUrl": "https://taylor.devopai.net",
+    "environment": "production",
+    "hostinger": {
+      "publicHtmlPath": "/public_html/teste-ai",
+      "sslEnabled": true
+    }
+  },
+  "setupDate": "2025-09-14T16:29:35.723Z",
+  "stripeProducts": {
+    "basic": "prod_T3Pd5kA2bRnGqy",
+    "premium": "prod_T3Pd193AlyMs1w",
+    "vip": "prod_T3PdkJmI9dpDM3"
+  },
+  "plans": [
+    {
+      "id": "basic",
+      "name": "basic teste",
+      "price": 100,
+      "currency": "usd",
+      "interval": "month",
+      "stripePriceId": "price_1S7InuRzyGIanNctz3r3Illp",
+      "stripeProductId": "prod_T3Pd5kA2bRnGqy"
+    },
+    {
+      "id": "premium",
+      "name": "premium teste",
+      "price": 200,
+      "currency": "usd",
+      "interval": "month",
+      "stripePriceId": "price_1S7InuRzyGIanNctPofUkvBO",
+      "stripeProductId": "prod_T3Pd193AlyMs1w"
+    },
+    {
+      "id": "vip",
+      "name": "teste vip",
+      "price": 300,
+      "currency": "usd",
+      "interval": "month",
+      "stripePriceId": "price_1S7InvRzyGIanNctR7ErDbNv",
+      "stripeProductId": "prod_T3PdkJmI9dpDM3"
+    }
+  ]
+}

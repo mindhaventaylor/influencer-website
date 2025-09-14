@@ -3,12 +3,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
 import api from '../../api';
+import { getInfluencerInfo } from '@/lib/config';
 
-const SignIn = ({ onSignInSuccess, onGoToSignUp }) => {
+interface SignInProps {
+  onSignInSuccess: (user: { id: string; email: string; token: string }) => void;
+  onGoToSignUp: () => void;
+}
+
+const SignIn = ({ onSignInSuccess, onGoToSignUp }: SignInProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  const influencer = getInfluencerInfo();
 
   const handleSignIn = async () => {
     try {
@@ -23,8 +31,8 @@ const SignIn = ({ onSignInSuccess, onGoToSignUp }) => {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen-mobile bg-black text-white p-4">
-      <h1 className="text-3xl font-bold mb-8">Welcome to Project Taylor</h1>
-      <img src="/default_avatar.png" alt="Avatar" className="w-24 h-24 rounded-full mb-8" />
+      <h1 className="text-3xl font-bold mb-8">Welcome to {influencer.displayName} AI</h1>
+      <img src={influencer.avatarUrl || "/default_avatar.png"} alt={influencer.displayName} className="w-24 h-24 rounded-full mb-8" />
       <h2 className="text-2xl font-semibold mb-6">Sign In</h2>
       <div className="w-full max-w-sm space-y-4">
         <Input

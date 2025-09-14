@@ -150,3 +150,98 @@
     min-height: var(--app-height);
   }
 }
+
+/* Influencer-specific CSS variables */
+:root {
+  --influencer-primary: #E91E63;
+  --influencer-secondary: #9C27B0;
+  --influencer-accent: #FF4081;
+  --influencer-name: "Taylor Swift";
+  --influencer-handle: "taylorswift";
+}
+
+/* Custom influencer styling */
+.influencer-gradient {
+  background: linear-gradient(135deg, var(--influencer-primary), var(--influencer-secondary));
+}
+
+.influencer-text-primary {
+  color: var(--influencer-primary);
+}
+
+.influencer-branding {
+  --primary: var(--influencer-primary);
+  --secondary: var(--influencer-secondary);
+  --accent: var(--influencer-accent);
+}
+
+/* Influencer-specific CSS variables */
+:root {
+  --influencer-primary: #E91E63;
+  --influencer-secondary: #9C27B0;
+  --influencer-accent: #FF4081;
+  --influencer-name: "Taylor Swift";
+  --influencer-handle: "taylorswift";
+}
+
+/* Custom influencer styling */
+.influencer-gradient {
+  background: linear-gradient(135deg, var(--influencer-primary), var(--influencer-secondary));
+}
+
+.influencer-text-primary {
+  color: var(--influencer-primary);
+}
+
+.influencer-branding {
+  --primary: var(--influencer-primary);
+  --secondary: var(--influencer-secondary);
+  --accent: var(--influencer-accent);
+}
+
+/* Influencer-specific CSS variables */
+:root {
+  --influencer-primary: #E91E63;
+  --influencer-secondary: #9C27B0;
+  --influencer-accent: #FF4081;
+  --influencer-name: "Taylor Swift";
+  --influencer-handle: "taylorswift";
+}
+
+/* Custom influencer styling */
+.influencer-gradient {
+  background: linear-gradient(135deg, var(--influencer-primary), var(--influencer-secondary));
+}
+
+.influencer-text-primary {
+  color: var(--influencer-primary);
+}
+
+.influencer-branding {
+  --primary: var(--influencer-primary);
+  --secondary: var(--influencer-secondary);
+  --accent: var(--influencer-accent);
+}
+/* Influencer-specific CSS variables */
+:root {
+  --influencer-primary: #e64162;
+  --influencer-secondary: #bc3012;
+  --influencer-accent: #81ddef;
+  --influencer-name: "teste";
+  --influencer-handle: "teste";
+}
+
+/* Custom influencer styling */
+.influencer-gradient {
+  background: linear-gradient(135deg, var(--influencer-primary), var(--influencer-secondary));
+}
+
+.influencer-text-primary {
+  color: var(--influencer-primary);
+}
+
+.influencer-branding {
+  --primary: var(--influencer-primary);
+  --secondary: var(--influencer-secondary);
+  --accent: var(--influencer-accent);
+}
