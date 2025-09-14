@@ -3,8 +3,10 @@ import { stripe } from '@/lib/stripe';
 import { subscriptionQueries, userQueries, planQueries } from '@/lib/db/queries';
 import { postgres } from '@/lib/db';
 import Stripe from 'stripe';
+import { getInfluencerConfig } from '@/lib/config';
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const config = getInfluencerConfig();
+const webhookSecret = config.stripe.webhookSecret;
 
 // Function to allocate tokens based on plan
 async function allocateTokensForPlan(userId: string, planId: string, stripeSubscriptionId?: string, isSubscription: boolean = false) {

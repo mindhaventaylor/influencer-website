@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { postgres } from '@/lib/db';
+import { getInfluencerInfo } from '@/lib/config';
 
 export async function GET(
   request: NextRequest,
@@ -9,8 +10,32 @@ export async function GET(
   
   try {
     const { userId } = await params;
+    const { searchParams } = new URL(request.url);
+    const influencerId = searchParams.get('influencerId');
 
-    // Get user subscriptions from conversations table
+    // Get current influencer from config and resolve to database ID
+    const currentInfluencer = getInfluencerInfo();
+    let targetInfluencerId = influencerId;
+    
+    if (!targetInfluencerId) {
+      // Look up influencer by name to get the database UUID
+      const dbInfluencer = await sql`
+        SELECT id FROM influencers 
+        WHERE name = ${currentInfluencer.name} AND is_active = true
+        LIMIT 1
+      `;
+      
+      if (dbInfluencer.length > 0) {
+        targetInfluencerId = dbInfluencer[0].id;
+      } else {
+        return NextResponse.json(
+          { error: 'Influencer not found in database' },
+          { status: 404 }
+        );
+      }
+    }
+
+    // Get user subscriptions from conversations table for the specific influencer only
     const conversations = await sql`
       SELECT 
         c.id,
@@ -22,7 +47,7 @@ export async function GET(
         i.name as influencer_name
       FROM conversations c
       JOIN influencers i ON c.influencer_id = i.id
-      WHERE c.user_id = ${userId}
+      WHERE c.user_id = ${userId} AND c.influencer_id = ${targetInfluencerId}
       ORDER BY c.created_at DESC
     `;
 

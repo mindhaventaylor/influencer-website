@@ -100,3 +100,4 @@ If something goes wrong:
 ---
 
 **All remaining scripts are safe to use and won't damage your working system!** 🎉
+

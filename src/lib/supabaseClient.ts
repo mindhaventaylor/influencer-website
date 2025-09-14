@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
+import { getInfluencerConfig } from './config'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+const config = getInfluencerConfig()
+const supabaseUrl = config.database.supabase.url
+const supabaseAnonKey = config.database.supabase.anonKey
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)

@@ -52,9 +52,12 @@ async function addTokensToUser() {
     const user = users[0];
     console.log(`✅ Found user: ${user.email} (${user.id})`);
 
-    // Find conversations for this user
+    // Find conversations for this user with influencer info
     const conversations = await sql`
-      SELECT id, tokens FROM conversations WHERE user_id = ${user.id}
+      SELECT c.id, c.tokens, c.influencer_id, i.name as influencer_name 
+      FROM conversations c 
+      LEFT JOIN influencers i ON c.influencer_id = i.id 
+      WHERE c.user_id = ${user.id}
     `;
 
     if (conversations.length === 0) {
@@ -64,13 +67,29 @@ async function addTokensToUser() {
 
     console.log(`📊 Current conversations:`);
     for (const conv of conversations) {
-      console.log(`   - Conversation ${conv.id}: ${conv.tokens} tokens`);
+      console.log(`   - Conversation ${conv.id} (${conv.influencer_name || 'Unknown Influencer'}): ${conv.tokens} tokens`);
     }
 
-    // Add tokens to all conversations
+    // Ask which influencer to add tokens to
+    const influencerChoice = await askQuestion(`\nAdd tokens to:\n1. All influencers\n2. Current influencer only (${config.influencer.displayName})\nEnter choice (1 or 2): `);
+    
+    let targetConversations = conversations;
+    if (influencerChoice === '2') {
+      targetConversations = conversations.filter(conv => conv.influencer_id === config.influencer.id);
+      if (targetConversations.length === 0) {
+        console.log(`❌ No conversations found for user ${email} with current influencer (${config.influencer.displayName})`);
+        rl.close();
+        return;
+      }
+      console.log(`🎯 Adding tokens only to ${config.influencer.displayName} conversations`);
+    } else {
+      console.log(`🌐 Adding tokens to all influencer conversations`);
+    }
+
+    // Add tokens to selected conversations
     const tokensToAddNum = parseInt(tokensToAdd);
     
-    for (const conv of conversations) {
+    for (const conv of targetConversations) {
       const newTokenCount = (conv.tokens || 0) + tokensToAddNum;
       
       await sql`
@@ -79,16 +98,18 @@ async function addTokensToUser() {
         WHERE id = ${conv.id}
       `;
       
-      console.log(`✅ Updated conversation ${conv.id}: ${conv.tokens} → ${newTokenCount} tokens`);
+      console.log(`✅ Updated conversation ${conv.id} (${conv.influencer_name || 'Unknown'}): ${conv.tokens} → ${newTokenCount} tokens`);
     }
 
-    console.log(`\n🎉 Successfully added ${tokensToAddNum} tokens to all conversations for ${email}!`);
+    console.log(`\n🎉 Successfully added ${tokensToAddNum} tokens to ${targetConversations.length} conversation(s) for ${email}!`);
 
   } catch (error) {
     console.error('❌ Error adding tokens:', error.message);
   } finally {
+    rl.close();
     await sql.end();
   }
 }
 
 addTokensToUser();
+

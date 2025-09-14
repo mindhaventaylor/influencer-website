@@ -69,6 +69,7 @@ export const config: InfluencerConfig = influencerConfig;
 
 // Helper functions to get specific config values
 export const getInfluencerInfo = () => config.influencer;
+export const getInfluencerConfig = () => config;
 export const getBranding = () => config.branding;
 export const getPlans = () => config.plans;
 export const getStripeConfig = () => config.stripe;

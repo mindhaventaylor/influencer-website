@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { userQueries } from '@/lib/db/queries';
+import { getInfluencerConfig } from '@/lib/config';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,9 +31,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Stripe customer portal session
+    const config = getInfluencerConfig();
     const session = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/profile`,
+      return_url: `${config.deployment?.baseUrl || 'http://localhost:3003'}/profile`,
     });
 
     return NextResponse.json({ url: session.url });

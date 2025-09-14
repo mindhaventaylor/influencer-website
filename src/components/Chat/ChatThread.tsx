@@ -26,18 +26,29 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
       if (!influencerId || !userId) return;
       try {
         setLoading(true);
-        // influencer
-        const influencerCached = await ChatCache.getInfluencerById(influencerId);
-        if (mounted) setInfluencer(influencerCached);
-
-        // messages: use cache first
-        const cachedMsgs = ChatCache.peekThread(influencerId, userId);
-        if (cachedMsgs) {
-          if (mounted) setMessages(cachedMsgs);
-          setLoading(false);
+        
+        // Get influencer via API (uses database UUID)
+        const influencerResponse = await fetch('/api/influencer/current');
+        const influencerIdResponse = await fetch('/api/influencer/id');
+        
+        if (influencerResponse.ok && influencerIdResponse.ok) {
+          const influencerData = await influencerResponse.json();
+          const influencerIdData = await influencerIdResponse.json();
+          
+          if (mounted) setInfluencer(influencerData);
+          
+          // Use the resolved influencer ID (database UUID) for chat messages
+          const resolvedInfluencerId = influencerIdData.id;
+          
+          // messages: use cache first
+          const cachedMsgs = ChatCache.peekThread(resolvedInfluencerId, userId);
+          if (cachedMsgs) {
+            if (mounted) setMessages(cachedMsgs);
+            setLoading(false);
+          }
+          const msgs = await ChatCache.getThread(resolvedInfluencerId, userId);
+          if (mounted) setMessages(msgs);
         }
-        const msgs = await ChatCache.getThread(influencerId, userId);
-        if (mounted) setMessages(msgs);
       } catch (err) {
         if (mounted) setError(err.message);
       } finally {
@@ -48,9 +59,21 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
     bootstrap();
 
     // subscribe to cache updates so optimistic updates reflect across navigations
-    const unsubscribe = ChatCache.subscribeThread(influencerId, userId, (msgs) => {
-      if (mounted) setMessages(msgs);
-    });
+    // We'll set up the subscription after we get the resolved influencer ID
+    let unsubscribe: (() => void) | null = null;
+    
+    const setupSubscription = async () => {
+      const influencerIdResponse = await fetch('/api/influencer/id');
+      if (influencerIdResponse.ok) {
+        const influencerIdData = await influencerIdResponse.json();
+        const resolvedInfluencerId = influencerIdData.id;
+        unsubscribe = ChatCache.subscribeThread(resolvedInfluencerId, userId, (msgs) => {
+          if (mounted) setMessages(msgs);
+        });
+      }
+    };
+    
+    setupSubscription();
 
     return () => {
       mounted = false;
@@ -68,17 +91,26 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
     const userMessageContent = newMessage;
     setNewMessage('');
 
+    // Get the resolved influencer ID (database UUID)
+    const influencerIdResponse = await fetch('/api/influencer/id');
+    if (!influencerIdResponse.ok) {
+      alert('Failed to get influencer information');
+      return;
+    }
+    const influencerIdData = await influencerIdResponse.json();
+    const resolvedInfluencerId = influencerIdData.id;
+
     const tempId = Date.now();
     const optimisticUserMessage = { id: tempId, sender: 'user', content: userMessageContent, created_at: new Date().toISOString() };
-    ChatCache.appendToThread(influencerId, userId, optimisticUserMessage);
+    ChatCache.appendToThread(resolvedInfluencerId, userId, optimisticUserMessage);
     setIsAiReplying(true);
 
     try {
-      const { userMessage, aiMessage } = await ChatCache.sendMessage(influencerId, userMessageContent, userId);
-      ChatCache.replaceOptimistic(influencerId, userId, tempId, userMessage, aiMessage);
+      const { userMessage, aiMessage } = await ChatCache.sendMessage(resolvedInfluencerId, userMessageContent, userId);
+      ChatCache.replaceOptimistic(resolvedInfluencerId, userId, tempId, userMessage, aiMessage);
     } catch (err) {
       setError(err.message);
-      ChatCache.removeMessageById(influencerId, userId, tempId);
+      ChatCache.removeMessageById(resolvedInfluencerId, userId, tempId);
       alert(`Failed to send message: ${err.message}`);
     } finally {
       setIsAiReplying(false);

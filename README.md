@@ -2,169 +2,108 @@
 
 A complete AI chat platform that can be customized for any influencer. Each influencer gets their own branded website with AI chat, subscription plans, and token-based access control.
 
-## 🚀 Quick Start for New Influencer
+## 🚀 Quick Start
 
-### 1. Clone and Setup
+### 1. Clone and Install
 ```bash
-# Clone this repository
 git clone <your-repo-url>
 cd influencer-website
-
-# Install dependencies
 npm install
 ```
 
-### 2. Configure Your Influencer
+### 2. Setup Your Influencer
 ```bash
-# Interactive setup - this will guide you through all configurations
-npm run configure
+# Complete automated setup
+npm run setup
 ```
 
-This script will help you set up:
+This will guide you through:
 - ✅ Influencer name and branding
-- ✅ AI personality and prompts
+- ✅ AI personality and prompts  
 - ✅ Subscription plans and pricing
 - ✅ Stripe integration
 - ✅ Database configuration
 - ✅ Domain and deployment settings
 
-### 3. Setup Database and System
+### 3. Start Development
 ```bash
-# Complete system setup (safe - won't break existing data)
-npm run setup:complete
-```
-
-This script will:
-- ✅ Create/update influencer in database
-- ✅ Fix any missing user data
-- ✅ Create conversations and sample messages
-- ✅ Verify everything is working
-
-### 4. Start Development
-```bash
-# Start the development server
 npm run dev
 ```
 
 Visit `http://localhost:3002` to see your influencer's website!
 
-## 📋 Available Scripts
+## 🎭 Multiple Influencer Sites
 
-### 🔧 Essential Commands
+Create multiple influencer sites with complete data isolation:
+
+### Method 1: Copy Project (Recommended)
 ```bash
-npm run configure          # Interactive influencer setup
-npm run setup:complete     # Setup database and system
-npm run dev               # Start development server
+# Copy the entire project
+cp -r influencer-website influencer-website-selena
+cd influencer-website-selena
+
+# Run setup for new influencer
+npm run setup
 ```
 
-### 🎨 Customization
+### Method 2: Example Configuration
 ```bash
-npm run create:influencer  # Create new influencer template
-npm run generate:env       # Generate environment variables
-npm run update:project     # Update project metadata
+# Create example for second influencer
+node scripts/create-second-influencer-example.js
 ```
 
-### 💰 Stripe Management
-```bash
-npm run stripe:list        # List Stripe products/prices
-npm run stripe:report      # Generate Stripe usage report
-```
+📖 **[Complete Multi-Influencer Guide](./MULTI_INFLUENCER_SETUP_GUIDE.md)**
 
-### 🎫 Token Management
-```bash
-npm run test:tokens        # Check token system status
-npm run add:tokens         # Add tokens to user (for testing)
-```
+## 📋 Available Commands
 
-### 🔐 User Management
-```bash
-npm run cleanup:auth       # Delete user from auth (if needed)
-```
+| Command | Description |
+|---------|-------------|
+| `npm run setup` | **Complete automated setup for new influencer** |
+| `npm run configure` | Interactive influencer configuration |
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run deploy` | Deploy to Hostinger |
+| `npm run db:studio` | Open database studio |
+| `npm run tokens:add` | Add tokens to user (admin) |
+| `npm run tokens:test` | Test token system |
 
-### 🚀 Deployment
-```bash
-npm run deploy:hostinger   # Deploy to Hostinger
-```
+## 🎨 Features
 
-## 🏗️ System Architecture
+- **🤖 AI-Powered Chat**: Customizable AI personality for each influencer
+- **💳 Subscription Plans**: Multiple pricing tiers with Stripe integration
+- **🎫 Token System**: Pay-per-message or subscription-based access
+- **🎨 Custom Branding**: Colors, logos, and styling per influencer
+- **📱 Mobile-First**: Responsive design optimized for mobile
+- **🔒 Secure**: User authentication and data isolation
+- **🚀 Production Ready**: Easy deployment to Hostinger
 
-### Database Schema
-- **`users`** - User accounts with Stripe integration
-- **`influencers`** - Influencer profiles and AI settings
-- **`conversations`** - Chat sessions with token tracking
-- **`chat_messages`** - Individual chat messages
+## 🗄️ Database Isolation
 
-### Key Features
-- ✅ **AI Chat** - Powered by OpenAI with custom personalities
-- ✅ **Token System** - Pay-per-message or subscription-based
-- ✅ **Stripe Integration** - Secure payment processing
-- ✅ **Multi-tenant** - Each influencer has their own space
-- ✅ **Responsive Design** - Works on all devices
+Each influencer site has complete data isolation:
+- ✅ **Separate conversations** per influencer
+- ✅ **Independent token balances** per influencer  
+- ✅ **Isolated subscription data** per influencer
+- ✅ **Separate chat messages** per influencer
 
-## 🎯 Creating Multiple Influencers
-
-### Method 1: Copy and Customize
-1. Copy the entire project folder
-2. Run `npm run configure` in the new folder
-3. Update all settings for the new influencer
-4. Deploy to a new domain
-
-### Method 2: Use Deployment Folders
-The project includes a `deployments/` folder with pre-configured setups:
-- `deployments/teste-ai/` - Example configuration
-- `deployments/-ai/` - Another example
-
-## 🔧 Configuration Files
-
-### `influencer.config.js` (Main Configuration)
-```javascript
-module.exports = {
-  influencer: {
-    name: "Your Influencer Name",
-    prompt: "AI personality prompt",
-    modelPreset: { /* AI settings */ }
-  },
-  plans: [
-    {
-      id: "basic",
-      name: "Basic Plan",
-      priceCents: 1000,
-      // ... plan details
-    }
-  ],
-  stripe: {
-    // Stripe configuration
-  },
-  database: {
-    // Database settings
-  }
-}
-```
+Multiple influencers can safely share the same Supabase database.
 
 ## 🛡️ Safety Features
 
-### What's Protected
-- ✅ **No destructive scripts** - Removed all dangerous database cleanup scripts
-- ✅ **Safe setup** - `setup:complete` only adds data, never deletes
-- ✅ **Backup-friendly** - All scripts are non-destructive
+- ✅ **No destructive scripts** - All scripts are safe and non-destructive
+- ✅ **Safe setup** - Only adds data, never deletes
+- ✅ **Backup-friendly** - All operations are reversible
 - ✅ **Error handling** - Comprehensive error checking
-
-### Safe Scripts Only
-- `setup:complete` - Safe setup (adds data only)
-- `configure` - Interactive configuration
-- `test:tokens` - Read-only testing
-- `add:tokens` - Safe token addition
 
 ## 🚨 Important Notes
 
-### ⚠️ Database Safety
-- **Never run cleanup scripts** - They have been removed for safety
-- **Always backup** before major changes
-- **Use `setup:complete`** for initial setup - it's safe and non-destructive
+### ⚠️ Before You Start
+- **Backup your data** before making major changes
+- **Test locally first** before deploying to production
+- **Use staging domains** for testing
 
 ### 💡 Best Practices
-1. **Test locally first** - Always test on localhost before deployment
-2. **Use staging** - Deploy to a staging domain first
+1. **Test the setup** - Always test on localhost first
+2. **Use staging** - Deploy to a staging domain first  
 3. **Monitor tokens** - Check token usage regularly
 4. **Update regularly** - Keep dependencies updated
 
@@ -174,40 +113,64 @@ module.exports = {
 
 **"User not found in database"**
 ```bash
-npm run setup:complete  # Fixes missing user data
+npm run setup  # Fixes missing user data
 ```
 
 **"No tokens remaining"**
 ```bash
-npm run add:tokens      # Add more tokens for testing
+npm run tokens:add  # Add more tokens for testing
 ```
 
 **"Chat messages failing"**
 ```bash
-npm run setup:complete  # Recreates conversations
+npm run setup  # Recreates conversations
 ```
 
-**"Plans not showing"**
+**"Stripe errors"**
+- Check your Stripe keys in the configuration
+- Verify product and price IDs
+- Test with Stripe test mode first
+
+### Debug Commands
+
 ```bash
-npm run configure       # Reconfigure plans
-```
+# Check database
+npm run db:studio
 
-### Getting Help
-1. Check the terminal logs for detailed error messages
-2. Run `npm run test:tokens` to check system health
-3. Verify your `influencer.config.js` is properly configured
-4. Ensure your Stripe keys are correct
+# Test token system  
+npm run tokens:test
+
+# Add tokens to user
+npm run tokens:add
+```
 
 ## 📞 Support
 
-For issues or questions:
-1. Check this README first
-2. Run the troubleshooting commands
-3. Check the terminal logs for specific errors
-4. Verify all configuration files are correct
+If you encounter issues:
+
+1. Check the console logs for error messages
+2. Verify all configuration fields are correct
+3. Test database connectivity
+4. Verify Stripe and OpenAI API keys
+5. Check that all required files exist
+
+## 🎉 Success!
+
+Once setup is complete, you'll have:
+
+- ✅ Fully functional influencer site
+- ✅ Isolated user data and conversations
+- ✅ Working subscription system
+- ✅ AI-powered chat functionality
+- ✅ Production-ready deployment setup
+
+You can now create as many influencer sites as needed!
 
 ---
 
-**🎉 Your influencer AI chat platform is ready to go!**
+## 📚 Additional Resources
 
-Start with `npm run configure` to set up your first influencer, then `npm run setup:complete` to initialize the system.
+- **[Multi-Influencer Setup Guide](./MULTI_INFLUENCER_SETUP_GUIDE.md)** - Detailed guide for multiple sites
+- **[Chat Isolation Fix](./CHAT_ISOLATION_FIX.md)** - Technical details about chat isolation
+- **[Safe Scripts Guide](./SAFE_SCRIPTS_GUIDE.md)** - Information about safe operations
+- **[Stripe Setup Guide](./STRIPE_SHARED_SETUP.md)** - Stripe configuration details

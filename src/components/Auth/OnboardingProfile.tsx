@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const OnboardingProfile = ({ onNext, onGoBack }) => {
+const OnboardingProfile = ({ onNext }) => {
   const [displayName, setDisplayName] = useState('');
   const [genderIdentity, setGenderIdentity] = useState('');
   const [pronouns, setPronouns] = useState('');
@@ -74,17 +74,6 @@ const OnboardingProfile = ({ onNext, onGoBack }) => {
           </SelectContent>
         </Select>
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        
-        {onGoBack && (
-          <Button
-            onClick={onGoBack}
-            variant="ghost"
-            className="w-full p-3 rounded-lg text-white hover:bg-gray-700 mb-2"
-          >
-            ← Back to Login
-          </Button>
-        )}
-        
         <Button
           onClick={handleNext}
           className="w-full p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold"

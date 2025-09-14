@@ -17,17 +17,16 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }) => {
     const init = async () => {
       try {
         setLoading(true);
-        const cached = ChatCache.peekInfluencers();
-        if (cached && cached.length > 0) {
-          if (!mounted) return;
-          setInfluencer(cached[0]);
-          setLoading(false);
-          return;
+        
+        // Get current influencer via API
+        const response = await fetch('/api/influencer/current');
+        if (!response.ok) {
+          throw new Error('Failed to fetch influencer');
         }
-        const list = await ChatCache.getInfluencers();
-        if (!mounted) return;
-        if (list && list.length > 0) {
-          setInfluencer(list[0]);
+        const currentInfluencer = await response.json();
+        
+        if (mounted) {
+          setInfluencer(currentInfluencer);
         }
       } catch (err) {
         if (mounted) setError(err.message);

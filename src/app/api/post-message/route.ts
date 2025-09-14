@@ -1,11 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getInfluencerConfig } from '@/lib/config';
 
 // Initialize Supabase client with service role key for server-side operations
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
-const openaiApiKey = process.env.OPENAI_API_KEY || '';
+const config = getInfluencerConfig();
+const supabaseUrl = config.database.supabase.url;
+const supabaseServiceKey = config.database.supabase.serviceRoleKey;
+const supabaseAnonKey = config.database.supabase.anonKey;
+const openaiApiKey = config.ai.openaiApiKey;
 
 // Service role client (can bypass RLS) - initialized only when needed
 let supabaseService: any;
@@ -18,7 +20,7 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+      model: config.ai.model || 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
@@ -160,19 +162,22 @@ export async function POST(request: NextRequest) {
     }
     console.log('User message inserted successfully:', userMessage);
 
-    // 2. Fetch influencer data (using service client)
+    // 2. Get influencer data for AI prompt
+    console.log('Fetching influencer data...');
     const { data: influencer, error: influencerError } = await supabaseService
       .from('influencers')
-      .select('prompt, model_preset')
+      .select('id, name, prompt, model_preset')
       .eq('id', influencerId)
+      .eq('is_active', true)
       .single();
 
     if (influencerError || !influencer?.prompt) {
       console.error('Error fetching influencer:', influencerError);
-      throw new Error('Influencer not found or missing system prompt');
+      throw new Error(`Failed to fetch influencer: ${influencerError?.message || 'Missing prompt'}`);
     }
 
-    // 3. Fetch prior messages (using service client)
+    // 3. Get prior messages for context
+    console.log('Fetching prior messages...');
     const { data: priorMessages, error: priorMessagesError } = await supabaseService
       .from('chat_messages')
       .select('sender, content')

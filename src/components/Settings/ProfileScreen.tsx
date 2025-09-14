@@ -49,7 +49,7 @@ const ProfileScreen = ({ onGoToChat, onGoToSettings, onGoToDeleteAccount }: Prof
           const response = await fetch(`/api/subscription/user/${user.id}`);
           if (response.ok) {
             const data = await response.json();
-            setSubscriptions(data.subscriptions || []);
+            setSubscriptions(data.subscriptions || data || []);
           }
         } catch (error) {
           console.error('Error fetching subscriptions:', error);

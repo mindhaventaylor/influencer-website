@@ -1,23 +1,30 @@
 import Stripe from 'stripe';
 import { loadStripe } from '@stripe/stripe-js';
+import { getInfluencerConfig } from './config';
+
+// Get Stripe configuration from influencer config
+const getStripeConfig = () => {
+  const config = getInfluencerConfig();
+  return config.stripe;
+};
 
 // Server-side Stripe instance
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+export const stripe = new Stripe(getStripeConfig().secretKey, {
   apiVersion: '2024-06-20',
   typescript: true,
 });
 
 // Client-side Stripe instance
 export const getStripe = () => {
-  return loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+  return loadStripe(getStripeConfig().publishableKey);
 };
 
 // Stripe configuration
 export const STRIPE_CONFIG = {
   currency: 'usd',
   mode: 'subscription' as const,
-  successUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/success`,
-  cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/cancel`,
+  successUrl: `${getInfluencerConfig().deployment?.baseUrl || 'http://localhost:3003'}/payment/success`,
+  cancelUrl: `${getInfluencerConfig().deployment?.baseUrl || 'http://localhost:3003'}/payment/cancel`,
 };
 
 // Helper function to format price for display
