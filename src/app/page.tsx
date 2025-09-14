@@ -12,6 +12,8 @@ import DeleteAccountScreen from '@/components/Settings/DeleteAccountScreen';
 import DisclaimerScreen from '@/components/Settings/DisclaimerScreen';
 import PrivacyPolicyScreen from '@/components/Settings/PrivacyPolicyScreen';
 import TermsAndConditionsScreen from '@/components/Settings/TermsAndConditionsScreen';
+import MobileNavigation from '@/components/ui/MobileNavigation';
+import MobileCallScreen from '@/components/ui/MobileCallScreen';
 import { supabase } from '@/lib/supabaseClient';
 
 interface User {
@@ -30,6 +32,10 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [influencerId, setInfluencerId] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [callState, setCallState] = useState<{ isActive: boolean; type: 'voice' | 'video' | null }>({
+    isActive: false,
+    type: null
+  });
   const currentScreenRef = useRef(currentScreen);
 
   // Update ref when currentScreen changes
@@ -165,6 +171,20 @@ export default function Home() {
     }
   };
 
+  // Call handlers
+  const handleCall = (type: 'voice' | 'video') => {
+    setCallState({ isActive: true, type });
+  };
+
+  const handleEndCall = () => {
+    setCallState({ isActive: false, type: null });
+  };
+
+  const handleResumeChat = () => {
+    setCallState({ isActive: false, type: null });
+    setCurrentScreen("ChatThread");
+  };
+
   let screenComponent;
   switch (currentScreen) {
     case "SignIn":
@@ -205,8 +225,31 @@ export default function Home() {
   }
 
   return (
-    <div className="App h-screen-mobile overflow-hidden">
-      {screenComponent}
+    <div className="App h-screen-mobile overflow-hidden bg-background">
+      {/* Call Screen Overlay */}
+      {callState.isActive && callState.type && (
+        <MobileCallScreen
+          callType={callState.type}
+          onEndCall={handleEndCall}
+          onResumeChat={handleResumeChat}
+        />
+      )}
+      
+      {/* Main App Content */}
+      <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-hidden">
+          {screenComponent}
+        </div>
+        
+        {/* Mobile Navigation - only show when authenticated */}
+        {user && !callState.isActive && (
+          <MobileNavigation
+            currentScreen={currentScreen}
+            onScreenChange={setCurrentScreen}
+            onCall={handleCall}
+          />
+        )}
+      </div>
     </div>
   );
 }

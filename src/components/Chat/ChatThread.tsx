@@ -118,45 +118,71 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen-mobile bg-black text-white">Loading messages...</div>;
+    return (
+      <div className="flex items-center justify-center h-full bg-background text-foreground">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading messages...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="flex items-center justify-center h-screen-mobile bg-black text-red-500">Error: {error}</div>;
+    return (
+      <div className="flex items-center justify-center h-full bg-background text-destructive">
+        <div className="text-center">
+          <p className="text-lg font-semibold mb-2">Error</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col h-screen-mobile bg-black text-white">
-      <header className="flex items-center justify-between pr-4 pl-2 py-4 border-b border-gray-800" style={{ backgroundColor: '#212121' }}>
-        <div className="flex items-center">
-          <button aria-label="Back" onClick={onGoBack} className="text-white mr-2 p-1">
-            <ChevronLeft className="h-7 w-7" />
+    <div className="flex flex-col h-full bg-background text-foreground pb-20">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={onGoBack} 
+            className="p-2 rounded-full hover:bg-secondary transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5" />
           </button>
           {influencer && (
             <>
-              <img src={influencer.avatar_url || '/path/to/default_avatar.png'} alt={influencer.display_name} className="w-10 h-10 rounded-full mr-3" />
-              <h1 className="text-xl font-bold">{influencer.display_name}</h1>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <img 
+                  src={influencer.avatar_url || '/default_avatar.png'} 
+                  alt={influencer.display_name} 
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold">{influencer.display_name}</h1>
+                <p className="text-sm text-muted-foreground">Online</p>
+              </div>
             </>
           )}
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
           <button
-            aria-label="Start video call"
             onClick={() => { setFeatureMessage('Video calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="focus:outline-none"
+            className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
-            <Video className="h-6 w-6 text-white" />
+            <Video className="h-5 w-5" />
           </button>
           <button
-            aria-label="Start voice call"
             onClick={() => { setFeatureMessage('Voice calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="focus:outline-none"
+            className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
-            <Phone className="h-6 w-6 text-white" />
+            <Phone className="h-5 w-5" />
           </button>
         </div>
-      </header>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      </div>
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
         {messages.flatMap((message) => {
           if (message.content && message.content.includes('\n')) {
             return message.content.split('\n').map((line, index) => ({
@@ -173,10 +199,10 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
               className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`p-3 rounded-lg max-w-xs lg:max-w-md ${
+                className={`p-3 rounded-xl max-w-xs lg:max-w-md ${
                   message.sender === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-800 text-white'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground'
                 }`}
               >
                 <MessageFormatter content={message.content} />
@@ -186,23 +212,30 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
         ))}
         {isAiReplying && (
           <div className="flex items-end">
-            <img src={influencer?.avatar_url || '/path/to/default_avatar.png'} alt={influencer?.display_name} className="w-10 h-10 rounded-full mr-4" />
-            <div className="p-3 rounded-lg max-w-xs lg:max-w-md bg-gray-800 text-white">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mr-3">
+              <img 
+                src={influencer?.avatar_url || '/default_avatar.png'} 
+                alt={influencer?.display_name} 
+                className="w-6 h-6 rounded-full object-cover"
+              />
+            </div>
+            <div className="p-3 rounded-xl max-w-xs lg:max-w-md bg-secondary text-secondary-foreground">
               <div className="flex items-center justify-center space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
               </div>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
-      <footer className="p-4 border-t border-gray-800" style={{ backgroundColor: '#212121', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-        <div className="flex items-center space-x-2">
+      {/* Input Area - Fixed at bottom */}
+      <div className="fixed bottom-20 left-0 right-0 p-4 border-t border-border bg-card z-30">
+        <div className="flex items-center space-x-3">
           <Input
             type="text"
-            placeholder="Type a message"
+            placeholder="Type a message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => {
@@ -210,21 +243,29 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
                 handleSendMessage();
               }
             }}
-            className="flex-1 p-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500"
+            className="flex-1 p-4 rounded-xl bg-input border border-border text-foreground placeholder-muted-foreground"
           />
-          <Button onClick={handleSendMessage} className="p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
-            <Send className="h-6 w-6" />
+          <Button 
+            onClick={handleSendMessage} 
+            className="p-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <Send className="h-5 w-5" />
           </Button>
         </div>
-      </footer>
+      </div>
       {showFeatureModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black opacity-60" onClick={() => setShowFeatureModal(false)} />
-          <div role="dialog" aria-modal="true" className="relative bg-[#121212] text-white rounded-xl p-6 max-w-sm mx-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowFeatureModal(false)} />
+          <div role="dialog" aria-modal="true" className="relative bg-card text-card-foreground rounded-xl p-6 max-w-sm mx-4 border border-border">
             <h3 className="text-lg font-semibold mb-2">Feature coming soon</h3>
-            <p className="text-sm text-gray-300">{featureMessage}</p>
+            <p className="text-sm text-muted-foreground">{featureMessage}</p>
             <div className="mt-4 flex justify-end">
-              <button onClick={() => setShowFeatureModal(false)} className="px-4 py-2 rounded-full bg-[#2C2C2E] hover:bg-gray-700">OK</button>
+              <button 
+                onClick={() => setShowFeatureModal(false)} 
+                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+              >
+                OK
+              </button>
             </div>
           </div>
         </div>
