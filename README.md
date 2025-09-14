@@ -32,25 +32,49 @@ npm run dev
 
 Visit `http://localhost:3002` to see your influencer's website!
 
-## 🎭 Multiple Influencer Sites
+## 🎭 Multiple Influencer Sites (Independent Operation)
 
-Create multiple influencer sites with complete data isolation:
+Create multiple influencer sites that operate completely independently:
 
-### Method 1: Copy Project (Recommended)
+### Quick Setup (Recommended)
+```bash
+# Create a new influencer site
+npm run create:site
+
+# Follow the prompts, then:
+cd influencer-website-[handle]
+npm install
+npm run setup:config
+npm run setup:stripe  
+npm run setup:database
+npm run dev
+```
+
+### Manual Setup
 ```bash
 # Copy the entire project
 cp -r influencer-website influencer-website-selena
 cd influencer-website-selena
 
-# Run setup for new influencer
-npm run setup
+# Configure the influencer
+npm run setup:config
+
+# Set up Stripe products
+npm run setup:stripe
+
+# Set up database
+npm run setup:database
+
+# Start development
+npm run dev
 ```
 
-### Method 2: Example Configuration
-```bash
-# Create example for second influencer
-node scripts/create-second-influencer-example.js
-```
+### What Makes This Independent:
+- ✅ **Users sign up directly** (no admin setup required)
+- ✅ **Conversations created automatically** when users start chatting
+- ✅ **Separate subscription plans** (not shared between influencers)
+- ✅ **Complete data isolation** (users can't access other influencer sites)
+- ✅ **Independent billing** (separate Stripe products per influencer)
 
 📖 **[Complete Multi-Influencer Guide](./MULTI_INFLUENCER_SETUP_GUIDE.md)**
 
@@ -58,8 +82,11 @@ node scripts/create-second-influencer-example.js
 
 | Command | Description |
 |---------|-------------|
-| `npm run setup` | **Complete automated setup for new influencer** |
-| `npm run configure` | Interactive influencer configuration |
+| `npm run create:site` | **Create new independent influencer site** |
+| `npm run setup:config` | Configure influencer (name, branding, plans) |
+| `npm run setup:stripe` | Set up Stripe products for influencer |
+| `npm run setup:database` | Set up database for influencer |
+| `npm run setup` | Complete automated setup (legacy) |
 | `npm run dev` | Start development server |
 | `npm run build` | Build for production |
 | `npm run deploy` | Deploy to Hostinger |

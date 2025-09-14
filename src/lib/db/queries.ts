@@ -18,21 +18,54 @@ export const userQueries = {
   },
 
   async getById(id: string) {
-    const result = await db.select().from(users)
+    const result = await db.select({
+      id: users.id,
+      email: users.email,
+      username: users.username,
+      displayName: users.displayName,
+      provider: users.provider,
+      providerId: users.providerId,
+      stripeCustomerId: users.stripeCustomerId,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      deletedAt: users.deletedAt
+    }).from(users)
       .where(and(eq(users.id, id), isNull(users.deletedAt)))
       .limit(1);
     return result[0] || null;
   },
 
   async getByEmail(email: string) {
-    const result = await db.select().from(users)
+    const result = await db.select({
+      id: users.id,
+      email: users.email,
+      username: users.username,
+      displayName: users.displayName,
+      provider: users.provider,
+      providerId: users.providerId,
+      stripeCustomerId: users.stripeCustomerId,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      deletedAt: users.deletedAt
+    }).from(users)
       .where(and(eq(users.email, email), isNull(users.deletedAt)))
       .limit(1);
     return result[0] || null;
   },
 
   async getByStripeCustomerId(stripeCustomerId: string) {
-    const result = await db.select().from(users)
+    const result = await db.select({
+      id: users.id,
+      email: users.email,
+      username: users.username,
+      displayName: users.displayName,
+      provider: users.provider,
+      providerId: users.providerId,
+      stripeCustomerId: users.stripeCustomerId,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      deletedAt: users.deletedAt
+    }).from(users)
       .where(and(eq(users.stripeCustomerId, stripeCustomerId), isNull(users.deletedAt)))
       .limit(1);
     return result[0] || null;
