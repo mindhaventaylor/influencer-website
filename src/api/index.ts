@@ -154,6 +154,28 @@ const api = {
 
     return await response.json();
   },
+
+  async createConversationForUser(userId: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('User not authenticated');
+    }
+    const response = await fetch('/api/conversation/create-for-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        userId,
+      }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to create conversation for user');
+    }
+    return await response.json();
+  },
 };
 
 export default api;

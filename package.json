@@ -12,7 +12,7 @@
     "configure": "node scripts/configure-influencer.js",
     "deploy": "node scripts/deploy-hostinger.js",
     "db:studio": "drizzle-kit studio",
-    "tokens:add": "node scripts/add-tokens-to-user.js",
+    "tokens:add": "node scrinpts/add-tokens-to-user.js",
     "tokens:test": "node scripts/test-token-system.js"
   },
   "dependencies": {

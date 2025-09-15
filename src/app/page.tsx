@@ -15,6 +15,7 @@ import TermsAndConditionsScreen from '@/components/Settings/TermsAndConditionsSc
 import MobileNavigation from '@/components/ui/MobileNavigation';
 import MobileCallScreen from '@/components/ui/MobileCallScreen';
 import { supabase } from '@/lib/supabaseClient';
+import api from '@/api';
 
 interface User {
   id: string;
@@ -37,11 +38,35 @@ export default function Home() {
     type: null
   });
   const currentScreenRef = useRef(currentScreen);
+  const conversationCreatedRef = useRef<Set<string>>(new Set());
 
   // Update ref when currentScreen changes
   useEffect(() => {
     currentScreenRef.current = currentScreen;
   }, [currentScreen]);
+
+  // Function to create conversation for user automatically
+  const createConversationForUser = async (userId: string) => {
+    // Prevent duplicate conversation creation attempts
+    if (conversationCreatedRef.current.has(userId)) {
+      console.log('⏭️ Conversation already created for user:', userId);
+      return null;
+    }
+
+    try {
+      console.log('🔄 Creating conversation for user:', userId);
+      conversationCreatedRef.current.add(userId);
+      const result = await api.createConversationForUser(userId);
+      console.log('✅ Conversation created successfully for user:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to create conversation for user:', error);
+      // Remove from set on error so we can retry later
+      conversationCreatedRef.current.delete(userId);
+      // Don't throw here - conversation creation failure shouldn't break login
+      return null;
+    }
+  };
 
   useEffect(() => {
     const getSession = async () => {
@@ -50,6 +75,11 @@ export default function Home() {
       console.log('Session result:', session ? 'authenticated' : 'not authenticated');
       if (session) {
         setUser({ id: session.user.id, email: session.user.email!, token: session.access_token });
+        
+        // Create conversation for existing session (user already logged in)
+        console.log('Existing session found, creating conversation automatically...');
+        await createConversationForUser(session.user.id);
+        
         // Only redirect to ChatList if we're on SignIn screen
         if (currentScreenRef.current === "SignIn") {
           console.log('Redirecting to ChatList from SignIn');
@@ -66,20 +96,35 @@ export default function Home() {
     };
     getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state change:', event, 'session:', session ? 'authenticated' : 'not authenticated');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state change:', event, 'session:', session ? 'authenticated' : 'not authenticated');
+      
       if (session) {
         setUser({ id: session.user.id, email: session.user.email!, token: session.access_token });
+        
+        // Automatically create conversation for user on login
+        if (event === 'SIGNED_IN') {
+          console.log('🔄 User signed in, creating conversation automatically...');
+          await createConversationForUser(session.user.id);
+        }
+        
         // Only redirect to ChatList if we're on SignIn screen
         if (currentScreenRef.current === "SignIn") {
-          console.log('Auth state change: Redirecting to ChatList from SignIn');
+          console.log('🔄 Auth state change: Redirecting to ChatList from SignIn');
           setCurrentScreen("ChatList");
         }
       } else {
+        // User is signed out
+        console.log('🔄 User signed out, clearing state...');
         setUser(null);
+        
+        // Clear conversation tracking
+        conversationCreatedRef.current.clear();
+        console.log('🧹 Cleared all conversation tracking');
+        
         // Only redirect to SignIn if we're not in the middle of signup process
         if (currentScreenRef.current !== "SignUp" && currentScreenRef.current !== "OnboardingProfile") {
-          console.log('Auth state change: Redirecting to SignIn, current screen:', currentScreenRef.current);
+          console.log('🔄 Auth state change: Redirecting to SignIn, current screen:', currentScreenRef.current);
           setCurrentScreen("SignIn");
         }
       }
@@ -152,9 +197,29 @@ export default function Home() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setCurrentScreen("SignIn");
+    try {
+      console.log('🔄 Signing out user...');
+      await supabase.auth.signOut();
+      console.log('✅ User signed out successfully');
+      
+      // Clear user state
+      setUser(null);
+      
+      // Clear conversation tracking for this user
+      if (user) {
+        conversationCreatedRef.current.delete(user.id);
+        console.log('🧹 Cleared conversation tracking for user:', user.id);
+      }
+      
+      // Redirect to sign in
+      setCurrentScreen("SignIn");
+      console.log('🔄 Redirected to SignIn screen');
+    } catch (error) {
+      console.error('❌ Error during sign out:', error);
+      // Still clear local state even if signOut fails
+      setUser(null);
+      setCurrentScreen("SignIn");
+    }
   };
 
   const handleGoBack = () => {

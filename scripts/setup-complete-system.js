@@ -72,48 +72,7 @@ async function setupCompleteSystem() {
       
       console.log(`✅ Updated user ${user.email}: username=${username}, display_name=${displayName}`);
     }
-
-    // 3. Create conversations for existing users
-    console.log('\n3️⃣ Creating conversations for existing users...');
-    
-    const usersWithoutConversations = await sql`
-      SELECT u.id, u.email 
-      FROM users u 
-      LEFT JOIN conversations c ON u.id = c.user_id AND c.influencer_id = ${influencerId}
-      WHERE c.id IS NULL
-    `;
-
-    for (const user of usersWithoutConversations) {
-      const [conversation] = await sql`
-        INSERT INTO conversations (user_id, influencer_id, influencer_plan_ids, tokens)
-        VALUES (${user.id}, ${influencerId}, ${influencerData.plan_ids}, 100)
-        RETURNING id
-      `;
-      
-      console.log(`✅ Created conversation for user ${user.email}: ${conversation.id}`);
-    }
-
-    // 4. Create sample chat messages for existing conversations
-    console.log('\n4️⃣ Creating sample chat messages...');
-    
-    const conversations = await sql`
-      SELECT c.id, c.user_id, u.email 
-      FROM conversations c
-      JOIN users u ON c.user_id = u.id
-      LEFT JOIN chat_messages cm ON c.id = cm.conversation_id
-      WHERE cm.id IS NULL
-    `;
-
-    for (const conversation of conversations) {
-      // Create a welcome message from the influencer
-      const [welcomeMessage] = await sql`
-        INSERT INTO chat_messages (user_id, influencer_id, conversation_id, sender, content, type)
-        VALUES (${conversation.user_id}, ${influencerId}, ${conversation.id}, 'influencer', 'Hello! Welcome to our chat. How can I help you today?', 'text')
-        RETURNING id
-      `;
-      
-      console.log(`✅ Created welcome message for conversation ${conversation.id}`);
-    }
+  
 
     // 5. Verify the setup
     console.log('\n5️⃣ Verifying setup...');

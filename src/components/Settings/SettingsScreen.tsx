@@ -15,8 +15,6 @@ import { ExternalLink } from 'lucide-react';
 import BottomNavigation from '@/components/ui/BottomNavigation';
 
 const SettingsScreen = ({ onGoToChat, onGoToProfile, onSignOut, onGoToDisclaimer, onGoToPrivacyPolicy, onGoToTermsAndConditions }) => {
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   return (
     <div className="flex flex-col h-screen-mobile bg-black text-white">
@@ -43,15 +41,18 @@ const SettingsScreen = ({ onGoToChat, onGoToProfile, onSignOut, onGoToDisclaimer
       <div className="p-4 space-y-2">
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" className="w-full bg-red-600 hover:bg-red-700" onClick={() => setShowLogoutConfirm(true)}>Log Out</Button>
+            <Button variant="destructive" className="w-full bg-red-600 hover:bg-red-700">Log Out</Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You will be signed out of your account and redirected to the login screen.
+              </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={onSignOut}>Log Out</AlertDialogAction>
+              <AlertDialogAction onClick={onSignOut} className="bg-red-600 hover:bg-red-700">Log Out</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
