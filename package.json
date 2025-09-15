@@ -9,6 +9,7 @@
     "lint": "eslint",
     "setup": "node scripts/setup-new-influencer-site.js",
     "setup:complete": "node scripts/setup-complete-system.js",
+    "update:stripe-ids": "node scripts/update-stripe-price-ids.js",
     "configure": "node scripts/configure-influencer.js",
     "deploy": "node scripts/deploy-hostinger.js",
     "db:studio": "drizzle-kit studio",

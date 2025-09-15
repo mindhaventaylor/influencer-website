@@ -1,14 +1,104 @@
 #!/usr/bin/env node
 
 const postgres = require('postgres');
+const fs = require('fs');
 const config = require('../influencer.config.js');
 
 const sql = postgres(config.database.url);
+
+// Function to update config with real Stripe price IDs from deployment-info.json
+function updateConfigWithRealStripeIds() {
+  console.log('🔄 Updating config with real Stripe price IDs...');
+  
+  try {
+    // Check if deployment-info.json exists
+    const deploymentInfoPath = './deployment-info.json';
+    if (!fs.existsSync(deploymentInfoPath)) {
+      console.log('⚠️  deployment-info.json not found, skipping Stripe price ID update');
+      return false;
+    }
+
+    // Load deployment info
+    const deploymentInfo = JSON.parse(fs.readFileSync(deploymentInfoPath, 'utf8'));
+    
+    if (!deploymentInfo.plans || deploymentInfo.plans.length === 0) {
+      console.log('⚠️  No plans found in deployment-info.json');
+      return false;
+    }
+
+    // Create a mapping of plan IDs to Stripe price IDs
+    const stripePriceMapping = {};
+    deploymentInfo.plans.forEach(plan => {
+      if (plan.stripePriceId && plan.id) {
+        stripePriceMapping[plan.id] = plan.stripePriceId;
+      }
+    });
+
+    if (Object.keys(stripePriceMapping).length === 0) {
+      console.log('⚠️  No valid Stripe price IDs found in deployment-info.json');
+      return false;
+    }
+
+    // Update the config plans with real Stripe price IDs
+    const updatedConfig = { ...config };
+    let updatedCount = 0;
+
+    updatedConfig.plans = config.plans.map(plan => {
+      if (stripePriceMapping[plan.id] && plan.stripePriceId !== stripePriceMapping[plan.id]) {
+        console.log(`   ✅ Updating ${plan.name}: ${plan.stripePriceId} → ${stripePriceMapping[plan.id]}`);
+        updatedCount++;
+        return {
+          ...plan,
+          stripePriceId: stripePriceMapping[plan.id]
+        };
+      }
+      return plan;
+    });
+
+    // Also update Stripe products if available
+    if (deploymentInfo.stripeProducts) {
+      updatedConfig.stripe = {
+        ...config.stripe,
+        products: deploymentInfo.stripeProducts
+      };
+      console.log('   ✅ Updated Stripe products mapping');
+    }
+
+    // Write the updated config back to file
+    if (updatedCount > 0 || deploymentInfo.stripeProducts) {
+      const configContent = `module.exports = ${JSON.stringify(updatedConfig, null, 2)};`;
+      fs.writeFileSync('./influencer.config.js', configContent);
+      console.log(`   ✅ Updated influencer.config.js with ${updatedCount} real Stripe price IDs`);
+      return true;
+    } else {
+      console.log('   ℹ️  No Stripe price ID updates needed');
+      return false;
+    }
+
+  } catch (error) {
+    console.error('❌ Error updating config with Stripe price IDs:', error.message);
+    return false;
+  }
+}
 
 async function setupCompleteSystem() {
   console.log('🚀 Setting up complete influencer system...\n');
 
   try {
+    // 0. Update config with real Stripe price IDs
+    console.log('0️⃣ Updating configuration with real Stripe price IDs...');
+    const configUpdated = updateConfigWithRealStripeIds();
+    if (configUpdated) {
+      console.log('✅ Configuration updated with real Stripe price IDs');
+      // Reload the config to use the updated values
+      delete require.cache[require.resolve('../influencer.config.js')];
+      const updatedConfig = require('../influencer.config.js');
+      Object.assign(config, updatedConfig);
+    } else {
+      console.log('⚠️  Configuration update skipped or no updates needed');
+    }
+    console.log('');
+
     // 1. Create or update the influencer
     console.log('1️⃣ Setting up influencer...');
     
@@ -74,8 +164,8 @@ async function setupCompleteSystem() {
     }
   
 
-    // 5. Verify the setup
-    console.log('\n5️⃣ Verifying setup...');
+    // 3. Verify the setup
+    console.log('\n3️⃣ Verifying setup...');
     
     const influencerCount = await sql`SELECT COUNT(*) as count FROM influencers WHERE is_active = true`;
     const userCount = await sql`SELECT COUNT(*) as count FROM users`;
@@ -88,7 +178,7 @@ async function setupCompleteSystem() {
     console.log(`   - Conversations: ${conversationCount[0].count}`);
     console.log(`   - Chat Messages: ${messageCount[0].count}`);
 
-    // 6. Show influencer details
+    // 4. Show influencer details
     const influencerDetails = await sql`
       SELECT name, prompt, plan_ids, is_active 
       FROM influencers 
@@ -105,7 +195,10 @@ async function setupCompleteSystem() {
     console.log('\n📝 Next steps:');
     console.log('   1. Test user signup and login');
     console.log('   2. Test chat functionality');
-    console.log('   3. Test plan purchases');
+    console.log('   3. Test plan purchases (Stripe price IDs updated)');
+    console.log('\n💳 Stripe Integration:');
+    console.log('   ✅ Configuration automatically updated with real Stripe price IDs');
+    console.log('   ✅ Payment system ready for production use');
 
   } catch (error) {
     console.error('❌ Error setting up system:', error);

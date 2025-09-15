@@ -183,23 +183,25 @@ export function TokenBalance({ userId, influencerId }: TokenBalanceProps) {
               {data.tokens.map((token) => (
                 <div key={token.id} className="bg-gray-800 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-1 rounded-full ${getTokenTypeColor(token.token_type)}`}>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className={`p-1 rounded-full ${getTokenTypeColor(token.token_type)} flex-shrink-0`}>
                         {getTokenTypeIcon(token.token_type)}
                       </div>
-                      <span className="font-medium text-white">
+                      <span className="font-medium text-white truncate">
                         {token.plan_name}
                       </span>
-                      <Badge variant="outline" className="text-xs">
-                        {token.token_type}
-                      </Badge>
-                      {token.auto_renew && (
-                        <Badge variant="secondary" className="text-xs bg-green-600">
-                          Auto-renew
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <Badge variant="outline" className="text-xs">
+                          {token.token_type}
                         </Badge>
-                      )}
+                        {token.auto_renew && (
+                          <Badge variant="secondary" className="text-xs bg-green-600 whitespace-nowrap">
+                            Auto-renew
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-lg font-bold text-white">
+                    <span className="text-lg font-bold text-white flex-shrink-0 ml-2">
                       {token.remaining_tokens}
                     </span>
                   </div>
