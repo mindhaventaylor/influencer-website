@@ -127,6 +127,33 @@ const api = {
       .is('read_at', null)
       .in('sender', ['influencer', 'system']);
   },
+
+  async initializeConversation(influencerId: string) {
+    // Get the current session to include auth token
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('User not authenticated');
+    }
+
+    // Call the conversation initialization endpoint
+    const response = await fetch('/api/conversation/initialize', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        influencerId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to initialize conversation');
+    }
+
+    return await response.json();
+  },
 };
 
 export default api;

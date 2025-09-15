@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { postgres } from '@/lib/db';
-import { getInfluencerInfo } from '@/lib/config';
 
 export async function GET(
   request: NextRequest,
@@ -10,32 +9,8 @@ export async function GET(
   
   try {
     const { userId } = await params;
-    const { searchParams } = new URL(request.url);
-    const influencerId = searchParams.get('influencerId');
 
-    // Get current influencer from config and resolve to database ID
-    const currentInfluencer = getInfluencerInfo();
-    let targetInfluencerId = influencerId;
-    
-    if (!targetInfluencerId) {
-      // Look up influencer by name to get the database UUID
-      const dbInfluencer = await sql`
-        SELECT id FROM influencers 
-        WHERE name = ${currentInfluencer.name} AND is_active = true
-        LIMIT 1
-      `;
-      
-      if (dbInfluencer.length > 0) {
-        targetInfluencerId = dbInfluencer[0].id;
-      } else {
-        return NextResponse.json(
-          { error: 'Influencer not found in database' },
-          { status: 404 }
-        );
-      }
-    }
-
-    // Get user subscriptions from user_subscriptions table for the specific influencer
+    // Get all user subscriptions across all influencers
     const subscriptions = await sql`
       SELECT 
         us.id,
@@ -56,14 +31,9 @@ export async function GET(
       FROM user_subscriptions us
       JOIN influencers i ON us.influencer_id = i.id
       LEFT JOIN plans p ON us.plan_id = p.id
-      WHERE us.user_id = ${userId} AND us.influencer_id = ${targetInfluencerId}
+      WHERE us.user_id = ${userId}
       ORDER BY us.created_at DESC
     `;
-
-    // If no subscription exists, return empty array (user can subscribe)
-    if (subscriptions.length === 0) {
-      return NextResponse.json([]);
-    }
 
     const formattedSubscriptions = subscriptions.map(sub => ({
       id: sub.id,
@@ -86,7 +56,7 @@ export async function GET(
     return NextResponse.json(formattedSubscriptions);
 
   } catch (error) {
-    console.error('Error fetching user subscriptions:', error);
+    console.error('Error fetching all user subscriptions:', error);
     return NextResponse.json(
       { error: 'Failed to fetch subscriptions' },
       { status: 500 }
@@ -95,3 +65,4 @@ export async function GET(
     // Don't call sql.end() - let the connection pool handle it
   }
 }
+

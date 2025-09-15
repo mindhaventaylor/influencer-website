@@ -183,33 +183,57 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
       </div>
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
-        {messages.flatMap((message) => {
-          if (message.content && message.content.includes('\n')) {
-            return message.content.split('\n').map((line, index) => ({
-              ...message,
-              id: `${message.id}-${index}`,
-              content: line,
-            }));
-          }
-          return message;
-        }).map((message) => (
-          message.content && message.content.trim() && (
-            <div
-              key={message.id}
-              className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`p-3 rounded-xl max-w-xs lg:max-w-md ${
-                  message.sender === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground'
-                }`}
-              >
-                <MessageFormatter content={message.content} />
+        {messages.length === 0 ? (
+          // Welcome message for new conversations
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center max-w-md">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
+                <img 
+                  src={influencer?.avatar_url || '/default_avatar.png'} 
+                  alt={influencer?.display_name} 
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              </div>
+              <h2 className="text-xl font-semibold mb-2">Welcome to {influencer?.display_name}!</h2>
+              <p className="text-muted-foreground mb-4">
+                Start a conversation by typing a message below. I'm here to chat with you!
+              </p>
+              <div className="text-sm text-muted-foreground">
+                💬 Send your first message to begin
               </div>
             </div>
-          )
-        ))}
+          </div>
+        ) : (
+          <>
+            {messages.flatMap((message) => {
+              if (message.content && message.content.includes('\n')) {
+                return message.content.split('\n').map((line, index) => ({
+                  ...message,
+                  id: `${message.id}-${index}`,
+                  content: line,
+                }));
+              }
+              return message;
+            }).map((message) => (
+              message.content && message.content.trim() && (
+                <div
+                  key={message.id}
+                  className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`p-3 rounded-xl max-w-xs lg:max-w-md ${
+                      message.sender === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary text-secondary-foreground'
+                    }`}
+                  >
+                    <MessageFormatter content={message.content} />
+                  </div>
+                </div>
+              )
+            ))}
+          </>
+        )}
         {isAiReplying && (
           <div className="flex items-end">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mr-3">

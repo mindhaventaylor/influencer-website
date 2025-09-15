@@ -45,9 +45,13 @@ export interface InfluencerConfig {
     products: Record<string, string>;
   };
   ai: {
+    creator_id: string;
     openaiApiKey: string;
-    prompt: string;
-    modelPreset: Record<string, any>;
+    model: string;
+    temperature: number;
+    maxTokens: number;
+    personalityPrompt: string;
+    systemMessage: string;
   };
   database: {
     url: string;

@@ -94,11 +94,34 @@ export const ChatCache = {
     if (!messagesPromises.has(key)) {
       const p = api
         .getChatThread(influencerId, userId)
-        .then(({ data, error }) => {
-          if (error) throw error;
+        .then(async ({ data, error }) => {
+          if (error) {
+            console.error('Error fetching chat thread:', error);
+            throw error;
+          }
           const msgs = data || [];
+          
+          // If no messages exist, initialize conversation
+          if (msgs.length === 0) {
+            try {
+              console.log('No messages found, initializing conversation...');
+              await api.initializeConversation(influencerId);
+              console.log('Conversation initialized successfully');
+            } catch (initError) {
+              console.warn('Failed to initialize conversation:', initError);
+              // Don't throw here - empty conversation is still valid
+            }
+          }
+          
           messagesByThreadId.set(key, msgs);
           return msgs;
+        })
+        .catch((error) => {
+          console.error('ChatCache getThread error:', error);
+          // Return empty array on error to prevent infinite loading
+          const emptyMsgs: Message[] = [];
+          messagesByThreadId.set(key, emptyMsgs);
+          return emptyMsgs;
         })
         .finally(() => {
           messagesPromises.delete(key);

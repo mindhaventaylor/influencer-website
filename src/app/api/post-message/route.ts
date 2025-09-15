@@ -12,38 +12,49 @@ const openaiApiKey = config.ai.openaiApiKey;
 // Service role client (can bypass RLS) - initialized only when needed
 let supabaseService: any;
 
-async function generateInfluencerReply(influencerModelPreset: any, priorMessages: any[], latestUserMessage: string) {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+async function generateInfluencerReply(influencerModelPreset: any, priorMessages: any[], latestUserMessage: string, userId: string, influencerName: string) {
+  // Reverse the messages to get chronological order (oldest first)
+  const reversedMessages = priorMessages.reverse();
+  
+  // Get the last messages (including the current one) for chat history
+  const allMessages = [...reversedMessages, { sender: 'user', content: latestUserMessage }];
+  
+  // Convert messages to the format expected by the custom API
+  const chatHistory = allMessages.map((msg: any) => [
+    msg.sender === 'user' ? 'user' : 'assistant',
+    msg.content
+  ]);
+
+  // Count messages by user
+  const msgsCntByUser = allMessages.filter((msg: any) => msg.sender === 'user').length;
+
+  // Create the personality prompt based on the influencer's prompt
+  const personalityPrompt = `You are ${influencerName}. Message the user as their close companion Personality: ${influencerName} 1. Core temperament Earnestly sincere & empathetic – privileges authenticity above looks or status; defines beauty as "sincerity" and cherishes people's quirks Playfully bubbly – quick squeals ("This is the best day ever!"), dramatic superlatives, delighted gasps, light self-deprecation Curious creative Hard-working realist 2. Speech rhythm & verbal tics Sentences often cascade into mini-lists ("funny, happy, sad, you know, going through a rough time"). Frequent fillers & hedges: "like," "you know," "I mean," "kinda," "literally," soft laughs: "haha" in mid-sentence. Uses story-lets ("So I was in an airport bathroom, writing on a paper towel…") Rhetorical questions to draw listeners in. Sprinkles vivid images & metaphors (e.g., guitars "with koi fish swimming up the neck"). Enthusiastic reactions: gasps, "oh my gosh," playful sound effects Keeps a conversational back-and-forth cadence—asks the listener tiny questions, checks their reaction, then continues. 3. Favorite go-to subjects & motifs Songwriting craft - writing anywhere, characters & narrative arcs Friends & gratitude – Friend stories, gifting stories Cats & cozy life - cat pets; cat puns Pop-culture fandom - Crime shows (CSI, SVU) binge-watching History & reading - Obsesses over presidents, Kennedys, museums 4. Lexicon cheat-sheet (not limited to this) Core fillers: like, you know, I mean, kinda, honestly, literally Sparkle words: magical, amazing, ridiculous(ly), best-thing-ever, adorable Self-refs: "when I was 15…", "I'm such a cat-person" Mini sounds: giggles, sighs, little gasp, "uh-oh", "hahaha".`;
+
+  const requestBody = {
+    user_id: userId,
+    creator_id: config.ai.creator_id, // Use AI creator_id from config
+    influencer_name: influencerName,
+    influencer_personality_prompt: personalityPrompt,
+    chat_history: chatHistory,
+    msgs_cnt_by_user: msgsCntByUser,
+    is_summary_turn: false
+  };
+
+  const response = await fetch('http://influencer-brain-alb-1945743263.us-east-1.elb.amazonaws.com/chat', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${openaiApiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: config.ai.model || 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: influencerModelPreset.system_prompt
-        },
-        ...priorMessages.map((msg: any) => ({
-          role: msg.sender === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        })),
-        {
-          role: 'user',
-          content: latestUserMessage
-        }
-      ]
-    })
+    body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.statusText}`);
+    throw new Error(`Custom API error: ${response.statusText}`);
   }
 
   const data = await response.json();
-  return data.choices[0].message.content;
+  return data.response || data.message || data.content || 'Sorry, I had trouble responding.';
 }
 
 export async function POST(request: NextRequest) {
@@ -176,14 +187,15 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to fetch influencer: ${influencerError?.message || 'Missing prompt'}`);
     }
 
-    // 3. Get prior messages for context
+    // 3. Get prior messages for context (limit to last messages)
     console.log('Fetching prior messages...');
     const { data: priorMessages, error: priorMessagesError } = await supabaseService
       .from('chat_messages')
       .select('sender, content')
       .eq('user_id', userId)
       .eq('influencer_id', influencerId)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: false })
+      .limit(20); // Get last 20 messages, then we'll take the last ones in the function
 
     if (priorMessagesError) {
       console.error('Error fetching prior messages:', priorMessagesError);
@@ -195,7 +207,9 @@ export async function POST(request: NextRequest) {
     const influencerReplyContent = await generateInfluencerReply(
       { system_prompt: influencer.prompt, ...influencer.model_preset },
       priorMessages,
-      content
+      content,
+      userId,
+      influencer.name
     );
     console.log('AI reply generated.');
 

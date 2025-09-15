@@ -24,11 +24,9 @@ export const userQueries = {
       username: users.username,
       displayName: users.displayName,
       stripeCustomerId: users.stripeCustomerId,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-      deletedAt: users.deletedAt
+      createdAt: users.createdAt
     }).from(users)
-      .where(and(eq(users.id, id), isNull(users.deletedAt)))
+      .where(eq(users.id, id))
       .limit(1);
     return result[0] || null;
   },
@@ -40,11 +38,9 @@ export const userQueries = {
       username: users.username,
       displayName: users.displayName,
       stripeCustomerId: users.stripeCustomerId,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-      deletedAt: users.deletedAt
+      createdAt: users.createdAt
     }).from(users)
-      .where(and(eq(users.email, email), isNull(users.deletedAt)))
+      .where(eq(users.email, email))
       .limit(1);
     return result[0] || null;
   },
@@ -56,23 +52,20 @@ export const userQueries = {
       username: users.username,
       displayName: users.displayName,
       stripeCustomerId: users.stripeCustomerId,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-      deletedAt: users.deletedAt
+      createdAt: users.createdAt
     }).from(users)
-      .where(and(eq(users.stripeCustomerId, stripeCustomerId), isNull(users.deletedAt)))
+      .where(eq(users.stripeCustomerId, stripeCustomerId))
       .limit(1);
     return result[0] || null;
   },
 
   async update(id: string, updates: Partial<typeof users.$inferInsert>) {
-    return await db.update(users).set({ ...updates, updatedAt: new Date() })
+    return await db.update(users).set(updates)
       .where(eq(users.id, id)).returning();
   },
 
   async getAll() {
     return await db.select().from(users)
-      .where(isNull(users.deletedAt))
       .orderBy(desc(users.createdAt));
   },
 };
