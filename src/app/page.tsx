@@ -44,6 +44,7 @@ export default function Home() {
   });
   const [isInitializing, setIsInitializing] = useState(true);
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const currentScreenRef = useRef(currentScreen);
   const conversationCreatedRef = useRef<Set<string>>(new Set());
 
@@ -144,6 +145,11 @@ export default function Home() {
       console.log('🔄 Auth state change:', event, 'session:', session ? 'authenticated' : 'not authenticated');
       
       if (session) {
+        // Set login loading state to prevent bottom bar flash
+        if (event === 'SIGNED_IN' && currentScreenRef.current === "SignIn") {
+          setIsLoggingIn(true);
+        }
+        
         setUser({ id: session.user.id, email: session.user.email!, token: session.access_token });
         
         // Automatically create conversation for user on login
@@ -157,6 +163,7 @@ export default function Home() {
         if (currentScreenRef.current === "SignIn") {
           console.log('🔄 Auth state change: Redirecting to ChatList from SignIn');
           setCurrentScreen("ChatList");
+          setIsLoggingIn(false); // Clear login loading state
         } else if (currentScreenRef.current === "SignUp" || currentScreenRef.current === "OnboardingProfile") {
           console.log('🔄 Auth state change: User authenticated during signup, staying on current screen:', currentScreenRef.current);
           // Don't redirect - let the signup flow handle the screen change
@@ -186,8 +193,8 @@ export default function Home() {
   }, []); // Empty dependency array - only run once on mount
 
   const handleSignInSuccess = (userData: User) => {
+    // Just set the user - let the auth state change listener handle the rest
     setUser(userData);
-    setCurrentScreen("ChatList");
   };
 
   const handleSignUpSuccess = (userData: User) => {
@@ -314,6 +321,18 @@ export default function Home() {
     );
   }
 
+  // Show loading state during login transition
+  if (isLoggingIn) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Signing you in...</p>
+        </div>
+      </div>
+    );
+  }
+
   let screenComponent;
   switch (currentScreen) {
     case "SignIn":
@@ -332,7 +351,7 @@ export default function Home() {
       screenComponent = <ChatThread onGoBack={handleGoBack} influencerId={influencerId} userToken={user?.token} userId={user?.id} />;
       break;
     case "SettingsScreen":
-      screenComponent = <SettingsScreen onGoBack={handleGoBack} onGoToChat={handleGoToChat} onGoToProfile={handleGoToProfile} onSignOut={handleSignOut} onGoToDisclaimer={handleGoToDisclaimer} onGoToPrivacyPolicy={handleGoToPrivacyPolicy} onGoToTermsAndConditions={handleGoToTermsAndConditions} />;
+      screenComponent = <SettingsScreen onGoToChat={handleGoToChat} onGoToProfile={handleGoToProfile} onSignOut={handleSignOut} onGoToDisclaimer={handleGoToDisclaimer} onGoToPrivacyPolicy={handleGoToPrivacyPolicy} onGoToTermsAndConditions={handleGoToTermsAndConditions} />;
       break;
     case "ProfileScreen":
       screenComponent = <ProfileScreen onGoToChat={handleGoToChat} onGoToSettings={handleGoToSettings} onGoToDeleteAccount={handleGoToDeleteAccount} />;
@@ -371,8 +390,8 @@ export default function Home() {
             {screenComponent}
           </div>
           
-          {/* Mobile Navigation - only show when authenticated and not in signup flow */}
-          {user && !callState.isActive && currentScreen !== "SignUp" && currentScreen !== "OnboardingProfile" && (
+          {/* Mobile Navigation - only show when authenticated and not in signup flow or login transition */}
+          {user && !callState.isActive && !isLoggingIn && currentScreen !== "SignUp" && currentScreen !== "OnboardingProfile" && (
             <MobileNavigation
               currentScreen={currentScreen}
               onScreenChange={setCurrentScreen}

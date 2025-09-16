@@ -19,6 +19,7 @@
     "test:production-errors": "node scripts/test-production-errors.js",
     "test:loading-indicators": "node scripts/test-loading-indicators.js",
     "test:no-stack-trace": "node scripts/test-no-stack-trace.js",
+    "test:login-bottom-bar": "node scripts/test-login-bottom-bar-fix.js",
     "configure": "node scripts/configure-influencer.js",
     "deploy": "node scripts/deploy-hostinger.js",
     "db:studio": "drizzle-kit studio",
