@@ -16,6 +16,9 @@ import MobileNavigation from '@/components/ui/MobileNavigation';
 import MobileCallScreen from '@/components/ui/MobileCallScreen';
 import { supabase } from '@/lib/supabaseClient';
 import api from '@/api';
+import { handleAuthError } from '@/lib/authErrorHandler';
+import { logError, logSuccess } from '@/lib/errorLogger';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 
 interface User {
   id: string;
@@ -37,6 +40,8 @@ export default function Home() {
     isActive: false,
     type: null
   });
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const currentScreenRef = useRef(currentScreen);
   const conversationCreatedRef = useRef<Set<string>>(new Set());
 
@@ -48,55 +53,92 @@ export default function Home() {
   // Function to create conversation for user automatically
   const createConversationForUser = async (userId: string) => {
     // Prevent duplicate conversation creation attempts
-    if (conversationCreatedRef.current.has(userId)) {
-      console.log('⏭️ Conversation already created for user:', userId);
+    if (conversationCreatedRef.current.has(userId) || isCreatingConversation) {
+      console.log('⏭️ Conversation already created or being created for user:', userId);
       return null;
     }
 
     try {
       console.log('🔄 Creating conversation for user:', userId);
+      setIsCreatingConversation(true);
       conversationCreatedRef.current.add(userId);
+      
       const result = await api.createConversationForUser(userId);
-      console.log('✅ Conversation created successfully for user:', result);
+      logSuccess('Conversation created successfully for user', result);
       return result;
     } catch (error) {
-      console.error('❌ Failed to create conversation for user:', error);
+      logError('Failed to create conversation for user', error);
+      
+      // Handle authentication errors
+      const wasAuthError = await handleAuthError(
+        error,
+        setUser,
+        setCurrentScreen,
+        conversationCreatedRef,
+        setIsCreatingConversation
+      );
+      
+      if (wasAuthError) {
+        return null;
+      }
+      
       // Remove from set on error so we can retry later
       conversationCreatedRef.current.delete(userId);
       // Don't throw here - conversation creation failure shouldn't break login
       return null;
+    } finally {
+      setIsCreatingConversation(false);
     }
   };
 
   useEffect(() => {
-    const getSession = async () => {
-      console.log('Getting session, current screen:', currentScreenRef.current);
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('Session result:', session ? 'authenticated' : 'not authenticated');
-      if (session) {
-        setUser({ id: session.user.id, email: session.user.email!, token: session.access_token });
+    let isMounted = true;
+
+    const initializeApp = async () => {
+      try {
+        console.log('🚀 Initializing app...');
+        setIsInitializing(true);
         
-        // Create conversation for existing session (user already logged in)
-        console.log('Existing session found, creating conversation automatically...');
-        await createConversationForUser(session.user.id);
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('📋 Initial session check:', session ? 'authenticated' : 'not authenticated');
         
-        // Only redirect to ChatList if we're on SignIn screen
-        if (currentScreenRef.current === "SignIn") {
-          console.log('Redirecting to ChatList from SignIn');
-          setCurrentScreen("ChatList");
+        if (session && isMounted) {
+          setUser({ id: session.user.id, email: session.user.email!, token: session.access_token });
+          
+          // Create conversation for existing session (user already logged in)
+          console.log('🔄 Creating conversation for existing session...');
+          await createConversationForUser(session.user.id);
+          
+          // Redirect to ChatList if we're on SignIn screen
+          if (currentScreenRef.current === "SignIn") {
+            console.log('🔄 Redirecting to ChatList from SignIn');
+            setCurrentScreen("ChatList");
+          }
+        } else if (isMounted) {
+          setUser(null);
+          // Only redirect to SignIn if we're not in the middle of signup process
+          if (currentScreenRef.current !== "SignUp" && currentScreenRef.current !== "OnboardingProfile") {
+            console.log('🔄 Redirecting to SignIn, current screen:', currentScreenRef.current);
+            setCurrentScreen("SignIn");
+          }
         }
-      } else {
-        setUser(null);
-        // Only redirect to SignIn if we're not in the middle of signup process
-        if (currentScreenRef.current !== "SignUp" && currentScreenRef.current !== "OnboardingProfile") {
-          console.log('Redirecting to SignIn, current screen:', currentScreenRef.current);
+      } catch (error) {
+        logError('Error during app initialization', error);
+        if (isMounted) {
           setCurrentScreen("SignIn");
+        }
+      } finally {
+        if (isMounted) {
+          setIsInitializing(false);
         }
       }
     };
-    getSession();
+
+    initializeApp();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      
       console.log('🔄 Auth state change:', event, 'session:', session ? 'authenticated' : 'not authenticated');
       
       if (session) {
@@ -109,9 +151,13 @@ export default function Home() {
         }
         
         // Only redirect to ChatList if we're on SignIn screen
+        // Don't redirect if we're in the middle of signup process
         if (currentScreenRef.current === "SignIn") {
           console.log('🔄 Auth state change: Redirecting to ChatList from SignIn');
           setCurrentScreen("ChatList");
+        } else if (currentScreenRef.current === "SignUp" || currentScreenRef.current === "OnboardingProfile") {
+          console.log('🔄 Auth state change: User authenticated during signup, staying on current screen:', currentScreenRef.current);
+          // Don't redirect - let the signup flow handle the screen change
         }
       } else {
         // User is signed out
@@ -120,6 +166,7 @@ export default function Home() {
         
         // Clear conversation tracking
         conversationCreatedRef.current.clear();
+        setIsCreatingConversation(false);
         console.log('🧹 Cleared all conversation tracking');
         
         // Only redirect to SignIn if we're not in the middle of signup process
@@ -130,7 +177,10 @@ export default function Home() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []); // Empty dependency array - only run once on mount
 
   const handleSignInSuccess = (userData: User) => {
@@ -215,7 +265,7 @@ export default function Home() {
       setCurrentScreen("SignIn");
       console.log('🔄 Redirected to SignIn screen');
     } catch (error) {
-      console.error('❌ Error during sign out:', error);
+      logError('Error during sign out', error);
       // Still clear local state even if signOut fails
       setUser(null);
       setCurrentScreen("SignIn");
@@ -249,6 +299,18 @@ export default function Home() {
     setCallState({ isActive: false, type: null });
     setCurrentScreen("ChatThread");
   };
+
+  // Show loading state during initialization
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
 
   let screenComponent;
   switch (currentScreen) {
@@ -290,31 +352,33 @@ export default function Home() {
   }
 
   return (
-    <div className="App h-screen-mobile overflow-hidden bg-background">
-      {/* Call Screen Overlay */}
-      {callState.isActive && callState.type && (
-        <MobileCallScreen
-          callType={callState.type}
-          onEndCall={handleEndCall}
-          onResumeChat={handleResumeChat}
-        />
-      )}
-      
-      {/* Main App Content */}
-      <div className="h-full flex flex-col">
-        <div className="flex-1 overflow-hidden">
-          {screenComponent}
-        </div>
-        
-        {/* Mobile Navigation - only show when authenticated */}
-        {user && !callState.isActive && (
-          <MobileNavigation
-            currentScreen={currentScreen}
-            onScreenChange={setCurrentScreen}
-            onCall={handleCall}
+    <ErrorBoundary>
+      <div className="App h-screen-mobile overflow-hidden bg-background">
+        {/* Call Screen Overlay */}
+        {callState.isActive && callState.type && (
+          <MobileCallScreen
+            callType={callState.type}
+            onEndCall={handleEndCall}
+            onResumeChat={handleResumeChat}
           />
         )}
+        
+        {/* Main App Content */}
+        <div className="h-full flex flex-col">
+          <div className="flex-1 overflow-hidden">
+            {screenComponent}
+          </div>
+          
+          {/* Mobile Navigation - only show when authenticated and not in signup flow */}
+          {user && !callState.isActive && currentScreen !== "SignUp" && currentScreen !== "OnboardingProfile" && (
+            <MobileNavigation
+              currentScreen={currentScreen}
+              onScreenChange={setCurrentScreen}
+              onCall={handleCall}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }

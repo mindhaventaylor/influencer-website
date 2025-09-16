@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Send, Video, Phone, ChevronLeft } from 'lucide-react';
 import MessageFormatter from '@/components/ui/MessageFormatter';
 import ChatCache from '@/lib/chatCache';
+import { getUserFriendlyError } from '@/lib/errorMessages';
+import { logError } from '@/lib/errorLogger';
 
 const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
   const [messages, setMessages] = useState([]);
@@ -109,9 +111,10 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
       const { userMessage, aiMessage } = await ChatCache.sendMessage(resolvedInfluencerId, userMessageContent, userId);
       ChatCache.replaceOptimistic(resolvedInfluencerId, userId, tempId, userMessage, aiMessage);
     } catch (err) {
-      setError(err.message);
+      const userFriendlyError = getUserFriendlyError(err);
+      setError(userFriendlyError);
       ChatCache.removeMessageById(resolvedInfluencerId, userId, tempId);
-      alert(`Failed to send message: ${err.message}`);
+      alert(`Failed to send message: ${userFriendlyError}`);
     } finally {
       setIsAiReplying(false);
     }

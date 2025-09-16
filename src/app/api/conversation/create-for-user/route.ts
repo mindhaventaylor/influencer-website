@@ -48,6 +48,39 @@ export async function POST(request: NextRequest) {
     }
     console.log('✅ User authenticated:', user.id);
 
+    // Ensure user exists in the users table
+    const { data: existingUser, error: userCheckError } = await supabaseService
+      .from('users')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (userCheckError && userCheckError.code !== 'PGRST116') {
+      console.error('Error checking user existence:', userCheckError);
+      throw new Error(`Failed to check user existence: ${userCheckError.message}`);
+    }
+
+    if (!existingUser) {
+      console.log('📝 User not found in database, creating user profile...');
+      // Create user profile in the database
+      const { error: insertError } = await supabaseService
+        .from('users')
+        .insert([{ 
+          id: user.id, 
+          email: user.email,
+          username: user.email?.split('@')[0] || null,
+          display_name: user.email?.split('@')[0] || null
+        }]);
+
+      if (insertError) {
+        console.error('Error creating user profile:', insertError);
+        throw new Error(`Failed to create user profile: ${insertError.message}`);
+      }
+      console.log('✅ User profile created successfully');
+    } else {
+      console.log('✅ User exists in database');
+    }
+
     // Get the influencer ID from the database by name
     const { data: influencer, error: influencerError } = await supabaseService
       .from('influencers')

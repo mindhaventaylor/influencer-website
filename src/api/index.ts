@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
+import { getUserFriendlyError } from '../lib/errorMessages';
+import { createUserFriendlyError } from '../lib/userFriendlyError';
 
 interface UserData {
   email: string;
@@ -92,7 +94,7 @@ const api = {
     // Get the current session to include auth token
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      throw new Error('User not authenticated');
+      throw createUserFriendlyError('Please sign in to continue', 401);
     }
 
     // Call the serverless function
@@ -110,7 +112,13 @@ const api = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Failed to post message');
+      
+      // Provide user-friendly error messages based on status code
+      const errorMessage = getUserFriendlyError({
+        message: errorData.error || `HTTP ${response.status}`,
+        status: response.status
+      });
+      throw createUserFriendlyError(errorMessage, response.status);
     }
 
     // The API now returns an object with both messages
@@ -132,7 +140,7 @@ const api = {
     // Get the current session to include auth token
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      throw new Error('User not authenticated');
+      throw createUserFriendlyError('Please sign in to continue', 401);
     }
 
     // Call the conversation initialization endpoint
@@ -149,7 +157,13 @@ const api = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Failed to initialize conversation');
+      
+      // Provide user-friendly error messages based on status code
+      const errorMessage = getUserFriendlyError({
+        message: errorData.error || `HTTP ${response.status}`,
+        status: response.status
+      });
+      throw createUserFriendlyError(errorMessage, response.status);
     }
 
     return await response.json();
@@ -158,7 +172,7 @@ const api = {
   async createConversationForUser(userId: string) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      throw new Error('User not authenticated');
+      throw createUserFriendlyError('Please sign in to continue', 401);
     }
     const response = await fetch('/api/conversation/create-for-user', {
       method: 'POST',
@@ -172,7 +186,13 @@ const api = {
     });
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Failed to create conversation for user');
+      
+      // Provide user-friendly error messages based on status code
+      const errorMessage = getUserFriendlyError({
+        message: errorData.error || `HTTP ${response.status}`,
+        status: response.status
+      });
+      throw createUserFriendlyError(errorMessage, response.status);
     }
     return await response.json();
   },

@@ -103,7 +103,9 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }) => {
         
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">{influencer.display_name}</h2>
-          <p className="text-muted-foreground">Ready to chat</p>
+          <p className="text-muted-foreground">
+            {influencer.is_active ? 'Ready to chat' : 'Currently unavailable'}
+          </p>
         </div>
         
         <Button 

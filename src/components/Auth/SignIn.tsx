@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
 import api from '../../api';
 import { getInfluencerInfo } from '@/lib/config';
+import { getUserFriendlyError } from '../../lib/errorMessages';
 
 interface SignInProps {
   onSignInSuccess: (user: { id: string; email: string; token: string }) => void;
@@ -15,17 +16,23 @@ const SignIn = ({ onSignInSuccess, onGoToSignUp }: SignInProps) => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   const influencer = getInfluencerInfo();
 
   const handleSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
       const { data, error } = await api.signIn(email, password);
       if (error) throw error;
       const { session, user } = data;
       onSignInSuccess({ id: user.id, email: user.email, token: session.access_token });
     } catch (err) {
-      setError(err.message);
+      setError(getUserFriendlyError(err));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -72,9 +79,17 @@ const SignIn = ({ onSignInSuccess, onGoToSignUp }: SignInProps) => {
           
           <Button
             onClick={handleSignIn}
-            className="w-full p-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+            disabled={isLoading}
+            className="w-full p-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center"
           >
-            Sign In
+            {isLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Signing In...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </Button>
           
           <div className="text-center">

@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
 import api from '../../api';
+import { getUserFriendlyError } from '../../lib/errorMessages';
 
 const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
   const [email, setEmail] = useState('');
@@ -20,26 +21,33 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
   const [agreedToSharing, setAgreedToSharing] = useState(false);
   const [error, setError] = useState(null);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Consider the form complete when email, password, date of birth, and all three consents are provided
   const isFormComplete = email && password && dob && agreedToTerms && agreedToConsent && agreedToSharing;
 
   const handleSignUp = async () => {
     setError(null);
+    setIsLoading(true);
+    
     if (!dob) {
       setError('Please provide your date of birth.');
+      setIsLoading(false);
       return;
     }
     if (!agreedToTerms) {
       setError('You must agree to the Terms & Conditions.');
+      setIsLoading(false);
       return;
     }
     if (!agreedToConsent) {
       setError('You must consent to processing your information.');
+      setIsLoading(false);
       return;
     }
     if (!agreedToSharing) {
       setError('You must consent to sharing your information.');
+      setIsLoading(false);
       return;
     }
     const birthDate = new Date(dob);
@@ -51,6 +59,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
     }
     if (age < 18) {
       setError('You must be at least 18 years old to sign up.');
+      setIsLoading(false);
       return;
     }
 
@@ -68,17 +77,22 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
       // Check if user needs email confirmation
       if (session && user) {
         // User is immediately signed in (email confirmation disabled)
+        console.log('✅ Signup successful, user immediately signed in');
         onSignUpSuccess({ id: user.id, email: user.email, token: session.access_token });
       } else if (user && !session) {
         // User created but needs email confirmation
+        console.log('📧 User created, email confirmation required');
         setSignupSuccess(true);
         setError(null);
         // Don't call onSignUpSuccess, let them stay on signup page
       } else {
+        console.error('❌ Unexpected signup response:', { session: !!session, user: !!user });
         throw new Error("Unexpected signup response");
       }
     } catch (err) {
-      setError(err.message);
+      setError(getUserFriendlyError(err));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -161,10 +175,19 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <Button
           onClick={handleSignUp}
-          disabled={!isFormComplete || signupSuccess}
-          className={`w-full p-3 rounded-lg ${isFormComplete && !signupSuccess ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} text-white font-bold`}
+          disabled={!isFormComplete || signupSuccess || isLoading}
+          className={`w-full p-3 rounded-lg ${isFormComplete && !signupSuccess && !isLoading ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} text-white font-bold flex items-center justify-center`}
         >
-          {signupSuccess ? 'Account Created' : 'Create Account'}
+          {isLoading ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              Creating Account...
+            </>
+          ) : signupSuccess ? (
+            'Account Created'
+          ) : (
+            'Create Account'
+          )}
         </Button>
         <div className="space-y-2 text-xs text-gray-400 mt-4">
           <div className="flex items-start space-x-2">

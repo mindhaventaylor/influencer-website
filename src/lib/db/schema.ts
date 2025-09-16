@@ -70,11 +70,23 @@ export const userSubscriptions = pgTable('user_subscriptions', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// Conversations table
+export const conversations = pgTable('conversations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  influencerId: uuid('influencer_id').notNull().references(() => influencers.id, { onDelete: 'cascade' }),
+  tokens: integer('tokens').default(100).notNull(),
+  influencerPlanIds: jsonb('influencer_plan_ids').default([]).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // Chat messages table
 export const chatMessages = pgTable('chat_messages', {
   id: bigint('id', { mode: 'number' }).primaryKey().generatedAlwaysAsIdentity(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   influencerId: uuid('influencer_id').notNull().references(() => influencers.id, { onDelete: 'cascade' }),
+  conversationId: uuid('conversation_id').references(() => conversations.id, { onDelete: 'cascade' }),
   sender: messageSenderEnum('sender').notNull(),
   content: text('content'),
   contentType: text('content_type').default('text').notNull(),
@@ -89,12 +101,14 @@ export const chatMessages = pgTable('chat_messages', {
 // Define relationships
 export const usersRelations = relations(users, ({ many }) => ({
   subscriptions: many(userSubscriptions),
+  conversations: many(conversations),
   chatMessages: many(chatMessages),
 }));
 
 export const influencersRelations = relations(influencers, ({ many }) => ({
   plans: many(plans),
   subscriptions: many(userSubscriptions),
+  conversations: many(conversations),
   chatMessages: many(chatMessages),
 }));
 
@@ -121,6 +135,18 @@ export const userSubscriptionsRelations = relations(userSubscriptions, ({ one })
   }),
 }));
 
+export const conversationsRelations = relations(conversations, ({ one, many }) => ({
+  user: one(users, {
+    fields: [conversations.userId],
+    references: [users.id],
+  }),
+  influencer: one(influencers, {
+    fields: [conversations.influencerId],
+    references: [influencers.id],
+  }),
+  chatMessages: many(chatMessages),
+}));
+
 export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   user: one(users, {
     fields: [chatMessages.userId],
@@ -129,6 +155,10 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   influencer: one(influencers, {
     fields: [chatMessages.influencerId],
     references: [influencers.id],
+  }),
+  conversation: one(conversations, {
+    fields: [chatMessages.conversationId],
+    references: [conversations.id],
   }),
 }));
 
@@ -141,5 +171,7 @@ export type Plan = typeof plans.$inferSelect;
 export type NewPlan = typeof plans.$inferInsert;
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
 export type NewUserSubscription = typeof userSubscriptions.$inferInsert;
+export type Conversation = typeof conversations.$inferSelect;
+export type NewConversation = typeof conversations.$inferInsert;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type NewChatMessage = typeof chatMessages.$inferInsert;
