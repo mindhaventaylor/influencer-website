@@ -29,6 +29,8 @@ interface User {
 interface ProfileData {
   username: string;
   display_name: string;
+  genderIdentity?: string;
+  pronouns?: string;
 }
 
 export default function Home() {

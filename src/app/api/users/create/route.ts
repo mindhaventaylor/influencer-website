@@ -5,6 +5,7 @@ import { stripe } from '@/lib/stripe';
 export async function POST(request: NextRequest) {
   try {
     const { email, username, display_name } = await request.json();
+    console.log('🔄 /api/users/create received:', { email, username, display_name });
 
     if (!email) {
       return NextResponse.json(
@@ -50,15 +51,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Create user profile in the database
+    const userData = { 
+      id: user.id, 
+      email: user.email,
+      username: username || null,
+      display_name: display_name || null,
+      stripe_customer_id: stripeCustomerId
+    };
+    console.log('🔄 Inserting user data:', userData);
+    
     const { error: insertError } = await supabase
       .from('users')
-      .upsert([{ 
-        id: user.id, 
-        email: user.email,
-        username: username || null,
-        display_name: display_name || null,
-        stripe_customer_id: stripeCustomerId
-      }], { 
+      .upsert([userData], { 
         onConflict: 'id',
         ignoreDuplicates: false 
       });

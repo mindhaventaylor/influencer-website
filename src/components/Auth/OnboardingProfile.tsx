@@ -21,7 +21,16 @@ const OnboardingProfile = ({ onNext, onGoBack }) => {
       setError('Please enter a display name.');
       return;
     }
-    onNext({ displayName, genderIdentity, pronouns });
+    // Generate a username from display name (lowercase, no spaces)
+    const username = displayName.toLowerCase().replace(/\s+/g, '');
+    const dataToPass = { 
+      username, 
+      display_name: displayName,
+      genderIdentity, 
+      pronouns 
+    };
+    console.log('🔄 OnboardingProfile data being passed:', dataToPass);
+    onNext(dataToPass);
   };
 
   return (

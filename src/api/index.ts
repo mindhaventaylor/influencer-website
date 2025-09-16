@@ -16,6 +16,7 @@ const api = {
 
   async signUp(userData: UserData) {
     const { email, password, username, display_name } = userData;
+    console.log('🔄 API signUp received data:', { email, username, display_name });
     
     // Step 1: Create the user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({

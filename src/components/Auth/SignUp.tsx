@@ -64,6 +64,13 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
     }
 
     try {
+      console.log('🔄 SignUp data being sent:', {
+        email,
+        username: profileData?.username || '',
+        display_name: profileData?.display_name || '',
+        profileData
+      });
+      
       const { data, error } = await api.signUp({ 
         email, 
         password,
