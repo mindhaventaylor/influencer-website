@@ -38,3 +38,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_unique_user_influencer
 ON conversations(user_id, influencer_id);
 
 COMMIT;
+

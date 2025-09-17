@@ -152,10 +152,13 @@ export default function Home() {
         
         setUser({ id: session.user.id, email: session.user.email!, token: session.access_token });
         
-        // Automatically create conversation for user on login
+        // Automatically create conversation for user on login (async, non-blocking)
         if (event === 'SIGNED_IN') {
           console.log('🔄 User signed in, creating conversation automatically...');
-          await createConversationForUser(session.user.id);
+          // Don't await - let it run in background
+          createConversationForUser(session.user.id).catch(error => {
+            logError('Background conversation creation failed', error);
+          });
         }
         
         // Only redirect to ChatList if we're on SignIn screen
@@ -348,6 +351,7 @@ export default function Home() {
       screenComponent = <ChatList onViewChat={handleViewChat} onGoToSettings={handleGoToSettings} onGoToProfile={handleGoToProfile} />;
       break;
     case "ChatThread":
+      console.log('🔄 Rendering ChatThread with influencerId:', influencerId, 'userId:', user?.id);
       screenComponent = <ChatThread onGoBack={handleGoBack} influencerId={influencerId} userToken={user?.token} userId={user?.id} />;
       break;
     case "SettingsScreen":
@@ -393,6 +397,7 @@ export default function Home() {
           {/* Mobile Navigation - only show when authenticated and not in signup flow or login transition */}
           {user && !callState.isActive && !isLoggingIn && currentScreen !== "SignUp" && currentScreen !== "OnboardingProfile" && (
             <MobileNavigation
+              key="mobile-navigation"
               currentScreen={currentScreen}
               onScreenChange={setCurrentScreen}
               onCall={handleCall}

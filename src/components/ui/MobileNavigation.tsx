@@ -17,10 +17,10 @@ export default function MobileNavigation({
   const [showCallOptions, setShowCallOptions] = useState(false);
 
   const navigationItems = [
-    { id: 'ChatList', icon: Home, label: 'Home' },
-    { id: 'ChatThread', icon: MessageCircle, label: 'Chat' },
-    { id: 'ProfileScreen', icon: User, label: 'Profile' },
-    { id: 'SettingsScreen', icon: Settings, label: 'Settings' },
+    { id: 'ChatList', icon: Home, label: 'Home', key: 'nav-home' },
+    { id: 'ChatThread', icon: MessageCircle, label: 'Chat', key: 'nav-chat' },
+    { id: 'ProfileScreen', icon: User, label: 'Profile', key: 'nav-profile' },
+    { id: 'SettingsScreen', icon: Settings, label: 'Settings', key: 'nav-settings' },
   ];
 
   return (
@@ -71,7 +71,7 @@ export default function MobileNavigation({
             
             return (
               <button
-                key={item.id}
+                key={item.key}
                 onClick={() => onScreenChange(item.id)}
                 className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-colors ${
                   isActive 

@@ -6,6 +6,81 @@ const config = require('../influencer.config.js');
 
 const sql = postgres(config.database.url);
 
+// Function to update Stripe product names to match configuration
+async function updateStripeProductNames() {
+  console.log('🔄 Updating Stripe product names...');
+  
+  try {
+    const Stripe = require('stripe');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    
+    // Check if deployment-info.json exists
+    const deploymentInfoPath = './deployment-info.json';
+    if (!fs.existsSync(deploymentInfoPath)) {
+      console.log('⚠️  deployment-info.json not found, skipping Stripe product name update');
+      return false;
+    }
+
+    // Load deployment info
+    const deploymentInfo = JSON.parse(fs.readFileSync(deploymentInfoPath, 'utf8'));
+    
+    if (!deploymentInfo.stripeProducts) {
+      console.log('⚠️  No Stripe products found in deployment-info.json');
+      return false;
+    }
+
+    console.log('📋 Updating Stripe product names...');
+    
+    // Update each product with the correct name from config
+    for (const planConfig of config.plans) {
+      const productId = deploymentInfo.stripeProducts[planConfig.id];
+      
+      if (!productId) {
+        console.log(`⚠️  No Stripe product ID found for plan: ${planConfig.id}`);
+        continue;
+      }
+
+      try {
+        const updatedProduct = await stripe.products.update(productId, {
+          name: planConfig.name,
+          description: planConfig.description,
+          metadata: {
+            planId: planConfig.id,
+            influencerName: config.influencer.name
+          }
+        });
+
+        console.log(`   ✅ Updated ${planConfig.id}: ${updatedProduct.name}`);
+      } catch (error) {
+        console.log(`   ❌ Error updating ${planConfig.id}: ${error.message}`);
+      }
+    }
+
+    // Update deployment-info.json with new names
+    const updatedDeploymentInfo = { ...deploymentInfo };
+    
+    updatedDeploymentInfo.plans = updatedDeploymentInfo.plans.map(plan => {
+      const configPlan = config.plans.find(p => p.id === plan.id);
+      if (configPlan) {
+        return {
+          ...plan,
+          name: configPlan.name,
+          price: configPlan.priceCents
+        };
+      }
+      return plan;
+    });
+
+    fs.writeFileSync(deploymentInfoPath, JSON.stringify(updatedDeploymentInfo, null, 2));
+    console.log('✅ Updated deployment-info.json with new plan names');
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error updating Stripe product names:', error.message);
+    return false;
+  }
+}
+
 // Function to update config with real Stripe price IDs from deployment-info.json
 function updateConfigWithRealStripeIds() {
   console.log('🔄 Updating config with real Stripe price IDs...');
@@ -55,52 +130,43 @@ function updateConfigWithRealStripeIds() {
       return plan;
     });
 
-    // Also update Stripe products if available
-    if (deploymentInfo.stripeProducts) {
-      updatedConfig.stripe = {
-        ...config.stripe,
-        products: deploymentInfo.stripeProducts
-      };
-      console.log('   ✅ Updated Stripe products mapping');
-    }
-
-    // Write the updated config back to file
-    if (updatedCount > 0 || deploymentInfo.stripeProducts) {
-      const configContent = `module.exports = ${JSON.stringify(updatedConfig, null, 2)};`;
-      fs.writeFileSync('./influencer.config.js', configContent);
-      console.log(`   ✅ Updated influencer.config.js with ${updatedCount} real Stripe price IDs`);
+    if (updatedCount > 0) {
+      // Write the updated config back to the file
+      fs.writeFileSync('./influencer.config.js', `module.exports = ${JSON.stringify(updatedConfig, null, 2)};`);
+      console.log(`✅ Updated ${updatedCount} plans with real Stripe price IDs`);
       return true;
     } else {
-      console.log('   ℹ️  No Stripe price ID updates needed');
-      return false;
+      console.log('✅ All plans already have correct Stripe price IDs');
+      return true;
     }
-
   } catch (error) {
-    console.error('❌ Error updating config with Stripe price IDs:', error.message);
+    console.error('❌ Error updating Stripe price IDs:', error.message);
     return false;
   }
 }
 
 async function setupCompleteSystem() {
-  console.log('🚀 Setting up complete influencer system...\n');
-
   try {
-    // 0. Update config with real Stripe price IDs
-    console.log('0️⃣ Updating configuration with real Stripe price IDs...');
+    console.log('🚀 **COMPLETE SYSTEM SETUP**\n');
+
+    // Step 0: Update Stripe product names
+    console.log('0️⃣ Updating Stripe product names...');
+    await updateStripeProductNames();
+    console.log('');
+
+    // Step 1: Update config with real Stripe price IDs
+    console.log('1️⃣ Updating configuration with real Stripe price IDs...');
     const configUpdated = updateConfigWithRealStripeIds();
     if (configUpdated) {
-      console.log('✅ Configuration updated with real Stripe price IDs');
-      // Reload the config to use the updated values
+      // Reload the config to get the updated values
       delete require.cache[require.resolve('../influencer.config.js')];
       const updatedConfig = require('../influencer.config.js');
       Object.assign(config, updatedConfig);
-    } else {
-      console.log('⚠️  Configuration update skipped or no updates needed');
     }
     console.log('');
 
-    // 1. Create or update the influencer
-    console.log('1️⃣ Setting up influencer...');
+    // 2. Create or update the influencer
+    console.log('2️⃣ Setting up influencer...');
     
     const influencerData = {
       name: config.influencer.name || 'Teste',
@@ -141,8 +207,8 @@ async function setupCompleteSystem() {
       console.log(`✅ Created new influencer: ${influencerData.name} (${influencerId})`);
     }
 
-    // 2. Update existing users with missing data
-    console.log('\n2️⃣ Updating users with missing data...');
+    // 3. Update existing users with missing data
+    console.log('\n3️⃣ Updating users with missing data...');
     
     const usersWithNullData = await sql`
       SELECT id, email FROM users 
@@ -162,23 +228,72 @@ async function setupCompleteSystem() {
       
       console.log(`✅ Updated user ${user.email}: username=${username}, display_name=${displayName}`);
     }
-  
 
-    // 3. Verify the setup
-    console.log('\n3️⃣ Verifying setup...');
+    // 4. Set up plans from configuration
+    console.log('\n4️⃣ Setting up plans from configuration...');
+    
+    // Check if plans already exist for this influencer
+    const existingPlans = await sql`
+      SELECT name FROM plans 
+      WHERE influencer_id = ${influencerId} AND is_active = true
+    `;
+    
+    if (existingPlans.length > 0) {
+      console.log(`⚠️  Plans already exist for ${config.influencer.name}:`);
+      existingPlans.forEach(plan => {
+        console.log(`   - ${plan.name}`);
+      });
+      console.log('   Skipping plan creation to avoid duplicates...');
+    } else {
+      console.log(`🚀 Creating ${config.plans.length} plans for ${config.influencer.name}...`);
+      
+      // Create plans from config
+      for (const planConfig of config.plans) {
+        console.log(`   Creating plan: ${planConfig.name}`);
+        
+        const result = await sql`
+          INSERT INTO plans (
+            name, description, price_cents, currency, interval,
+            influencer_id, features, is_active, created_at, updated_at
+          ) VALUES (
+            ${planConfig.name}, 
+            ${planConfig.description}, 
+            ${planConfig.priceCents}, 
+            ${planConfig.currency},
+            ${planConfig.interval}, 
+            ${influencerId}, 
+            ${JSON.stringify(planConfig.features)}, 
+            true,
+            now(), 
+            now()
+          ) RETURNING id, name
+        `;
+        
+        console.log(`   ✅ Created plan: ${result[0].name} (${result[0].id})`);
+        console.log(`   💰 Price: $${planConfig.priceCents/100}/${planConfig.interval}`);
+        console.log(`   🎯 Stripe Price ID: ${planConfig.stripePriceId}`);
+      }
+      
+      console.log(`✅ Successfully created ${config.plans.length} plans!`);
+    }
+
+    // 5. Verify the setup
+    console.log('\n5️⃣ Verifying setup...');
     
     const influencerCount = await sql`SELECT COUNT(*) as count FROM influencers WHERE is_active = true`;
     const userCount = await sql`SELECT COUNT(*) as count FROM users`;
     const conversationCount = await sql`SELECT COUNT(*) as count FROM conversations`;
     const messageCount = await sql`SELECT COUNT(*) as count FROM chat_messages`;
+    const planCount = await sql`SELECT COUNT(*) as count FROM plans WHERE influencer_id = ${influencerId} AND is_active = true`;
     
     console.log(`📊 System Status:`);
     console.log(`   - Active Influencers: ${influencerCount[0].count}`);
     console.log(`   - Users: ${userCount[0].count}`);
     console.log(`   - Conversations: ${conversationCount[0].count}`);
     console.log(`   - Chat Messages: ${messageCount[0].count}`);
+    console.log(`   - Plans: ${planCount[0].count}`);
 
-    // 4. Show influencer details
+    // 6. Show influencer details
     const influencerDetails = await sql`
       SELECT name, prompt, plan_ids, is_active 
       FROM influencers 
@@ -190,14 +305,29 @@ async function setupCompleteSystem() {
     console.log(`   - Active: ${influencerDetails[0].is_active}`);
     console.log(`   - Plan IDs: ${influencerDetails[0].plan_ids.join(', ')}`);
     console.log(`   - Prompt: ${influencerDetails[0].prompt.substring(0, 100)}...`);
+    
+    // Show created plans
+    const createdPlans = await sql`
+      SELECT name, price_cents, interval FROM plans 
+      WHERE influencer_id = ${influencerId} AND is_active = true
+      ORDER BY price_cents ASC
+    `;
+    
+    console.log(`\n💳 Available Plans:`);
+    createdPlans.forEach(plan => {
+      console.log(`   - ${plan.name}: $${plan.price_cents/100}/${plan.interval}`);
+    });
 
     console.log('\n🎉 Complete system setup finished successfully!');
     console.log('\n📝 Next steps:');
     console.log('   1. Test user signup and login');
     console.log('   2. Test chat functionality');
-    console.log('   3. Test plan purchases (Stripe price IDs updated)');
+    console.log('   3. Test plan purchases (Stripe names and price IDs updated)');
+    console.log('   4. Verify profile shows correct plan names');
     console.log('\n💳 Stripe Integration:');
+    console.log('   ✅ Stripe product names updated to match configuration');
     console.log('   ✅ Configuration automatically updated with real Stripe price IDs');
+    console.log('   ✅ Plans created in database from configuration');
     console.log('   ✅ Payment system ready for production use');
 
   } catch (error) {

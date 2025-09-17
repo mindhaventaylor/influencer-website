@@ -48,38 +48,24 @@ export async function POST(request: NextRequest) {
     }
     console.log('✅ User authenticated:', user.id);
 
-    // Ensure user exists in the users table
-    const { data: existingUser, error: userCheckError } = await supabaseService
+    // Ensure user exists in the users table (upsert for better performance)
+    const { error: userUpsertError } = await supabaseService
       .from('users')
-      .select('id')
-      .eq('id', user.id)
-      .single();
+      .upsert([{ 
+        id: user.id, 
+        email: user.email,
+        username: user.email?.split('@')[0] || null,
+        display_name: user.email?.split('@')[0] || null
+      }], { 
+        onConflict: 'id',
+        ignoreDuplicates: false 
+      });
 
-    if (userCheckError && userCheckError.code !== 'PGRST116') {
-      console.error('Error checking user existence:', userCheckError);
-      throw new Error(`Failed to check user existence: ${userCheckError.message}`);
+    if (userUpsertError) {
+      console.error('Error upserting user:', userUpsertError);
+      throw new Error(`Failed to ensure user exists: ${userUpsertError.message}`);
     }
-
-    if (!existingUser) {
-      console.log('📝 User not found in database, creating user profile...');
-      // Create user profile in the database
-      const { error: insertError } = await supabaseService
-        .from('users')
-        .insert([{ 
-          id: user.id, 
-          email: user.email,
-          username: user.email?.split('@')[0] || null,
-          display_name: user.email?.split('@')[0] || null
-        }]);
-
-      if (insertError) {
-        console.error('Error creating user profile:', insertError);
-        throw new Error(`Failed to create user profile: ${insertError.message}`);
-      }
-      console.log('✅ User profile created successfully');
-    } else {
-      console.log('✅ User exists in database');
-    }
+    console.log('✅ User profile ensured');
 
     // Get the influencer ID from the database by name
     const { data: influencer, error: influencerError } = await supabaseService
@@ -96,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     const influencerId = influencer.id;
 
-    // Check if conversation already exists
+    // Check if conversation already exists first
     const { data: existingConversation, error: conversationError } = await supabaseService
       .from('conversations')
       .select('id, tokens')
@@ -104,20 +90,18 @@ export async function POST(request: NextRequest) {
       .eq('influencer_id', influencerId)
       .single();
 
-    if (conversationError && conversationError.code !== 'PGRST116') { // PGRST116 means no rows found
-      console.error('Error fetching conversation:', conversationError);
-      throw new Error(`Failed to fetch conversation: ${conversationError.message}`);
+    if (conversationError && conversationError.code !== 'PGRST116') {
+      console.error('Error checking existing conversation:', conversationError);
+      throw new Error(`Failed to check conversation: ${conversationError.message}`);
     }
 
+    let conversation;
     if (existingConversation) {
+      // Conversation already exists, use it
       console.log('Conversation already exists:', existingConversation.id);
-      return NextResponse.json({
-        conversationId: existingConversation.id,
-        tokens: existingConversation.tokens,
-        message: 'Conversation already exists.'
-      });
+      conversation = existingConversation;
     } else {
-      // Create new conversation
+      // Create new conversation with initial tokens
       const { data: newConversation, error: createError } = await supabaseService
         .from('conversations')
         .insert({
@@ -132,14 +116,17 @@ export async function POST(request: NextRequest) {
         console.error('Error creating conversation:', createError);
         throw new Error(`Failed to create conversation: ${createError.message}`);
       }
-
-      console.log('Created new conversation for user:', newConversation.id);
-      return NextResponse.json({
-        conversationId: newConversation.id,
-        tokens: newConversation.tokens,
-        message: 'Conversation created successfully for user.'
-      });
+      
+      console.log('Created new conversation:', newConversation.id);
+      conversation = newConversation;
     }
+
+    console.log('Conversation ensured for user:', conversation.id);
+    return NextResponse.json({
+      conversationId: conversation.id,
+      tokens: conversation.tokens,
+      message: 'Conversation ensured successfully.'
+    });
   } catch (error: any) {
     console.error('Error in create-conversation-for-user function:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -66,3 +66,4 @@ async function testLoadingIndicators() {
 
 // Run the test
 testLoadingIndicators();
+

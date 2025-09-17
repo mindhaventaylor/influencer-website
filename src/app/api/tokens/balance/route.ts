@@ -54,17 +54,53 @@ export async function GET(request: NextRequest) {
     `;
 
     // Transform the data to match the expected interface
-    const tokens = conversations.map(conv => ({
-      id: conv.id,
-      token_type: 'subscription', // Default type
-      total_tokens: conv.tokens || 0,
-      used_tokens: 0,
-      remaining_tokens: conv.tokens || 0,
-      expires_at: null,
-      auto_renew: true,
-      plan_name: 'Subscription Plan',
-      plan_interval: 'month',
-      influencer_name: conv.influencer_name || 'Unknown'
+    const tokens = await Promise.all(conversations.map(async (conv) => {
+      // Get plan names from influencer_plan_ids
+      let planName = 'Free Plan';
+      let planInterval = 'month';
+      
+      if (conv.influencer_plan_ids && Array.isArray(conv.influencer_plan_ids) && conv.influencer_plan_ids.length > 0) {
+        // Get the first plan ID to fetch the actual plan name
+        const planId = conv.influencer_plan_ids[0];
+        if (planId) {
+          try {
+            const planData = await sql`
+              SELECT name, interval 
+              FROM plans 
+              WHERE id = ${planId} AND influencer_id = ${targetInfluencerId}
+              LIMIT 1
+            `;
+            
+            if (planData.length > 0) {
+              planName = planData[0].name;
+              planInterval = planData[0].interval;
+            }
+          } catch (error) {
+            console.error('Error fetching plan data:', error);
+            // Fallback to token-based naming
+            if (conv.tokens >= 1000) {
+              planName = 'Premium Plan';
+            } else if (conv.tokens >= 500) {
+              planName = 'Standard Plan';
+            } else if (conv.tokens >= 100) {
+              planName = 'Basic Plan';
+            }
+          }
+        }
+      }
+
+      return {
+        id: conv.id,
+        token_type: 'subscription',
+        total_tokens: conv.tokens || 0,
+        used_tokens: 0,
+        remaining_tokens: conv.tokens || 0,
+        expires_at: null,
+        auto_renew: true,
+        plan_name: planName,
+        plan_interval: planInterval,
+        influencer_name: conv.influencer_name || 'Unknown'
+      };
     }));
 
     const totalTokens = tokens.reduce((sum, token) => sum + token.total_tokens, 0);

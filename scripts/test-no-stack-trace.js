@@ -70,3 +70,4 @@ async function testNoStackTrace() {
 
 // Run the test
 testNoStackTrace();
+

@@ -25,7 +25,13 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
   useEffect(() => {
     let mounted = true;
     const bootstrap = async () => {
-      if (!influencerId || !userId) return;
+      if (!userId) {
+        console.log('❌ ChatThread: No userId provided');
+        return;
+      }
+      
+      console.log('🔄 ChatThread: Initializing with influencerId:', influencerId, 'userId:', userId);
+      
       try {
         setLoading(true);
         
@@ -40,7 +46,8 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
           if (mounted) setInfluencer(influencerData);
           
           // Use the resolved influencer ID (database UUID) for chat messages
-          const resolvedInfluencerId = influencerIdData.id;
+          // If no influencerId was passed, use the current influencer
+          const resolvedInfluencerId = influencerId || influencerIdData.id;
           
           // messages: use cache first
           const cachedMsgs = ChatCache.peekThread(resolvedInfluencerId, userId);
