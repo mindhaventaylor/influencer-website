@@ -1,47 +1,67 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { getInfluencerConfig } from '@/lib/config';
 
 // Initialize Supabase client with service role key for server-side operations
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || '';
-const openaiApiKey = process.env.OPENAI_API_KEY || '';
+const config = getInfluencerConfig();
+const supabaseUrl = config.database.supabase.url;
+const supabaseServiceKey = config.database.supabase.serviceRoleKey;
+const supabaseAnonKey = config.database.supabase.anonKey;
+const openaiApiKey = config.ai.openaiApiKey;
 
 // Service role client (can bypass RLS) - initialized only when needed
 let supabaseService: any;
 
-async function generateInfluencerReply(influencerModelPreset: any, priorMessages: any[], latestUserMessage: string) {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+async function generateInfluencerReply(influencerModelPreset: any, priorMessages: any[], latestUserMessage: string, userId: string, influencerName: string, conversationId: string) {
+  // --- ensure we don't mutate priorMessages ---
+  const chronological = priorMessages.slice().reverse();
+  
+  // chat history pairs for backend
+  const chatHistory = [...chronological, { sender: 'user', content: latestUserMessage }]
+    .map((msg: any) => [msg.sender === 'user' ? 'user' : 'assistant', msg.content]);
+
+  // Get authoritative user message count for the whole conversation from DB
+  const { count: userMsgCount, error: countError } = await supabaseService
+    .from('chat_messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('conversation_id', conversationId)
+    .eq('sender', 'user');
+
+  if (countError) {
+    console.error('Failed to count user messages, falling back to local count:', countError);
+  }
+
+  // Use DB count if available, otherwise fallback to computed length
+  const msgsCntByUser = typeof userMsgCount === 'number' ? userMsgCount : chatHistory.filter((m: any) => m[0] === 'user').length;
+
+  console.info('msgs_cnt_by_user ->', msgsCntByUser);
+
+  // Use the personality prompt from the database
+  const personalityPrompt = influencerModelPreset.system_prompt || `You are ${influencerName}, a helpful AI assistant.`;
+
+  const requestBody = {
+    user_id: userId,
+    creator_id: config.ai.creator_id, // Use AI creator_id from config
+    influencer_name: influencerName,
+    influencer_personality_prompt: personalityPrompt,
+    chat_history: chatHistory,
+    msgs_cnt_by_user: msgsCntByUser,
+  };
+
+  const response = await fetch('http://influencer-brain-alb-1945743263.us-east-1.elb.amazonaws.com/chat', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${openaiApiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: influencerModelPreset.system_prompt
-        },
-        ...priorMessages.map((msg: any) => ({
-          role: msg.sender === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        })),
-        {
-          role: 'user',
-          content: latestUserMessage
-        }
-      ]
-    })
+    body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.statusText}`);
+    throw new Error(`Custom API error: ${response.statusText}`);
   }
 
   const data = await response.json();
-  return data.choices[0].message.content;
+  return data.response || data.message || data.content || 'Sorry, I had trouble responding.';
 }
 
 export async function POST(request: NextRequest) {
@@ -81,13 +101,73 @@ export async function POST(request: NextRequest) {
     const userId = user.id;
     console.log(`Authenticated user ID: ${userId}`);
 
-    // 1. Insert user message (using user client to respect RLS)
+    // 1. Get or create conversation
+    console.log('Getting or creating conversation...');
+    let conversationId;
+    
+    // First, try to get existing conversation
+    const { data: existingConversation, error: conversationError } = await supabaseService
+      .from('conversations')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('influencer_id', influencerId)
+      .single();
+
+    if (conversationError && conversationError.code !== 'PGRST116') {
+      console.error('Error fetching conversation:', conversationError);
+      throw new Error(`Failed to fetch conversation: ${conversationError.message}`);
+    }
+
+    if (existingConversation) {
+      conversationId = existingConversation.id;
+      console.log('Using existing conversation:', conversationId);
+      
+      // Check if user has tokens left
+      const { data: conversationData, error: convError } = await supabaseService
+        .from('conversations')
+        .select('tokens')
+        .eq('id', conversationId)
+        .single();
+
+      if (convError) {
+        console.error('Error fetching conversation tokens:', convError);
+        throw new Error(`Failed to fetch conversation data: ${convError.message}`);
+      }
+
+      if ((conversationData.tokens || 0) <= 0) {
+        return NextResponse.json({ 
+          error: 'No tokens remaining. Please purchase a plan to continue chatting.' 
+        }, { status: 402 }); // 402 Payment Required
+      }
+    } else {
+      // Create new conversation
+      const { data: newConversation, error: createError } = await supabaseService
+        .from('conversations')
+        .insert({
+          user_id: userId,
+          influencer_id: influencerId,
+          tokens: 100 // Give user some initial tokens
+        })
+        .select('id')
+        .single();
+
+      if (createError) {
+        console.error('Error creating conversation:', createError);
+        throw new Error(`Failed to create conversation: ${createError.message}`);
+      }
+      
+      conversationId = newConversation.id;
+      console.log('Created new conversation:', conversationId);
+    }
+
+    // 2. Insert user message (using user client to respect RLS)
     console.log('Attempting to insert user message...');
     const { data: userMessage, error: userMessageError } = await supabaseUser
       .from('chat_messages')
       .insert({
         user_id: userId,
         influencer_id: influencerId,
+        conversation_id: conversationId,
         sender: 'user',
         content: content,
       })
@@ -100,25 +180,29 @@ export async function POST(request: NextRequest) {
     }
     console.log('User message inserted successfully:', userMessage);
 
-    // 2. Fetch influencer data (using service client)
+    // 2. Get influencer data for AI prompt
+    console.log('Fetching influencer data...');
     const { data: influencer, error: influencerError } = await supabaseService
       .from('influencers')
-      .select('prompt, model_preset')
+      .select('id, name, prompt, model_preset')
       .eq('id', influencerId)
+      .eq('is_active', true)
       .single();
 
     if (influencerError || !influencer?.prompt) {
       console.error('Error fetching influencer:', influencerError);
-      throw new Error('Influencer not found or missing system prompt');
+      throw new Error(`Failed to fetch influencer: ${influencerError?.message || 'Missing prompt'}`);
     }
 
-    // 3. Fetch prior messages (using service client)
+    // 3. Get prior messages for context (limit to last messages)
+    console.log('Fetching prior messages...');
     const { data: priorMessages, error: priorMessagesError } = await supabaseService
       .from('chat_messages')
       .select('sender, content')
       .eq('user_id', userId)
       .eq('influencer_id', influencerId)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: false })
+      .limit(20); // Get last 20 messages, then we'll take the last ones in the function
 
     if (priorMessagesError) {
       console.error('Error fetching prior messages:', priorMessagesError);
@@ -130,7 +214,10 @@ export async function POST(request: NextRequest) {
     const influencerReplyContent = await generateInfluencerReply(
       { system_prompt: influencer.prompt, ...influencer.model_preset },
       priorMessages,
-      content
+      content,
+      userId,
+      influencer.name,
+      conversationId
     );
     console.log('AI reply generated.');
 
@@ -141,6 +228,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: userId,
         influencer_id: influencerId,
+        conversation_id: conversationId,
         sender: 'influencer',
         content: influencerReplyContent,
       })
@@ -152,6 +240,35 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to insert AI message: ${aiMessageError.message}`);
     }
     console.log('AI message inserted successfully:', aiMessage);
+
+    // 6. Deduct tokens from conversation (1 token per message sent)
+    console.log('Deducting tokens from conversation...');
+    const tokensPerMessage = 1; // You can adjust this based on your token pricing
+    
+    // First get current token count
+    const { data: currentConversation, error: fetchError } = await supabaseService
+      .from('conversations')
+      .select('tokens')
+      .eq('id', conversationId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching current tokens:', fetchError);
+    } else {
+      const newTokenCount = Math.max((currentConversation.tokens || 0) - tokensPerMessage, 0);
+      
+      const { error: tokenUpdateError } = await supabaseService
+        .from('conversations')
+        .update({ tokens: newTokenCount })
+        .eq('id', conversationId);
+
+      if (tokenUpdateError) {
+        console.error('Error updating tokens:', tokenUpdateError);
+        // Don't throw here - the message was sent successfully, token update is secondary
+      } else {
+        console.log(`✅ Deducted ${tokensPerMessage} token(s) from conversation (${currentConversation.tokens} → ${newTokenCount})`);
+      }
+    }
 
     return NextResponse.json({
       userMessage,

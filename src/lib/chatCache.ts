@@ -94,11 +94,34 @@ export const ChatCache = {
     if (!messagesPromises.has(key)) {
       const p = api
         .getChatThread(influencerId, userId)
-        .then(({ data, error }) => {
-          if (error) throw error;
+        .then(async ({ data, error }) => {
+          if (error) {
+            console.error('Error fetching chat thread:', error);
+            throw error;
+          }
           const msgs = data || [];
+          
+          // If no messages exist, initialize conversation
+          if (msgs.length === 0) {
+            try {
+              console.log('No messages found, initializing conversation...');
+              await api.initializeConversation(influencerId);
+              console.log('Conversation initialized successfully');
+            } catch (initError) {
+              console.warn('Failed to initialize conversation:', initError);
+              // Don't throw here - empty conversation is still valid
+            }
+          }
+          
           messagesByThreadId.set(key, msgs);
           return msgs;
+        })
+        .catch((error) => {
+          console.error('ChatCache getThread error:', error);
+          // Return empty array on error to prevent infinite loading
+          const emptyMsgs: Message[] = [];
+          messagesByThreadId.set(key, emptyMsgs);
+          return emptyMsgs;
         })
         .finally(() => {
           messagesPromises.delete(key);
@@ -154,6 +177,49 @@ export const ChatCache = {
 
   async sendMessage(influencerId: string, content: string, userId: string) {
     return api.postMessage(influencerId, content, userId);
+  },
+
+  // 🚀 FAST MODE: Send message with immediate AI response
+  async sendMessageFast(influencerId: string, content: string, userId: string) {
+    console.log('🚀 FAST MODE: Starting fast message send...');
+    
+    // Get AI response immediately (no database save)
+    const result = await api.postMessageFast(influencerId, content, userId);
+    
+    // Save to database in background (non-blocking)
+    api.saveMessagesBackground(influencerId, result.userMessage, result.aiMessage, userId)
+      .then((saveResult) => {
+        if (saveResult.success) {
+          console.log('💾 Background save completed successfully');
+          // Update cache with real database IDs if needed
+          const key = makeThreadKey(influencerId, userId);
+          const current = messagesByThreadId.get(key) || [];
+          
+          // Replace temp messages with saved ones if they have real IDs
+          if (saveResult.savedUserMessage && saveResult.savedAiMessage) {
+            const updated = current.map(msg => {
+              if (msg.id === result.userMessage.id && msg.is_temp) {
+                return { ...saveResult.savedUserMessage, is_temp: false };
+              }
+              if (msg.id === result.aiMessage.id && msg.is_temp) {
+                return { ...saveResult.savedAiMessage, is_temp: false };
+              }
+              return msg;
+            });
+            messagesByThreadId.set(key, updated);
+            notifyThread(key);
+          }
+        } else {
+          console.warn('🚀 Background save failed:', saveResult.error);
+          // Could show a retry button or warning to user
+        }
+      })
+      .catch((error) => {
+        console.error('🚀 Background save error:', error);
+        // Background save failed, but user still sees the message
+      });
+    
+    return result;
   },
 };
 

@@ -4,6 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Send, Video, Phone, ChevronLeft } from 'lucide-react';
 import MessageFormatter from '@/components/ui/MessageFormatter';
 import ChatCache from '@/lib/chatCache';
+import { getUserFriendlyError } from '@/lib/errorMessages';
+import { logError } from '@/lib/errorLogger';
+import { toast } from 'sonner';
 
 const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
   const [messages, setMessages] = useState([]);
@@ -11,7 +14,6 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [isAiReplying, setIsAiReplying] = useState(false);
-  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [featureMessage, setFeatureMessage] = useState('');
@@ -23,23 +25,46 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
   useEffect(() => {
     let mounted = true;
     const bootstrap = async () => {
-      if (!influencerId || !userId) return;
+      if (!userId) {
+        console.log('❌ ChatThread: No userId provided');
+        return;
+      }
+      
+      console.log('🔄 ChatThread: Initializing with influencerId:', influencerId, 'userId:', userId);
+      console.log('📋 ChatThread: influencerId is', influencerId ? 'provided' : 'null - will fetch automatically');
+      
       try {
         setLoading(true);
-        // influencer
-        const influencerCached = await ChatCache.getInfluencerById(influencerId);
-        if (mounted) setInfluencer(influencerCached);
-
-        // messages: use cache first
-        const cachedMsgs = ChatCache.peekThread(influencerId, userId);
-        if (cachedMsgs) {
-          if (mounted) setMessages(cachedMsgs);
-          setLoading(false);
+        
+        // Get influencer via API (uses database UUID)
+        const influencerResponse = await fetch('/api/influencer/current');
+        const influencerIdResponse = await fetch('/api/influencer/id');
+        
+        if (influencerResponse.ok && influencerIdResponse.ok) {
+          const influencerData = await influencerResponse.json();
+          const influencerIdData = await influencerIdResponse.json();
+          
+          if (mounted) setInfluencer(influencerData);
+          
+          // Use the resolved influencer ID (database UUID) for chat messages
+          // If no influencerId was passed, use the current influencer
+          const resolvedInfluencerId = influencerId || influencerIdData.id;
+          
+          // messages: use cache first
+          const cachedMsgs = ChatCache.peekThread(resolvedInfluencerId, userId);
+          if (cachedMsgs) {
+            if (mounted) setMessages(cachedMsgs);
+            setLoading(false);
+          }
+          const msgs = await ChatCache.getThread(resolvedInfluencerId, userId);
+          if (mounted) setMessages(msgs);
         }
-        const msgs = await ChatCache.getThread(influencerId, userId);
-        if (mounted) setMessages(msgs);
       } catch (err) {
-        if (mounted) setError(err.message);
+        if (mounted) {
+          const userFriendlyError = getUserFriendlyError(err);
+          logError('Failed to initialize chat', err);
+          toast.error(userFriendlyError);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -48,9 +73,21 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
     bootstrap();
 
     // subscribe to cache updates so optimistic updates reflect across navigations
-    const unsubscribe = ChatCache.subscribeThread(influencerId, userId, (msgs) => {
-      if (mounted) setMessages(msgs);
-    });
+    // We'll set up the subscription after we get the resolved influencer ID
+    let unsubscribe: (() => void) | null = null;
+    
+    const setupSubscription = async () => {
+      const influencerIdResponse = await fetch('/api/influencer/id');
+      if (influencerIdResponse.ok) {
+        const influencerIdData = await influencerIdResponse.json();
+        const resolvedInfluencerId = influencerIdData.id;
+        unsubscribe = ChatCache.subscribeThread(resolvedInfluencerId, userId, (msgs) => {
+          if (mounted) setMessages(msgs);
+        });
+      }
+    };
+    
+    setupSubscription();
 
     return () => {
       mounted = false;
@@ -68,109 +105,211 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
     const userMessageContent = newMessage;
     setNewMessage('');
 
+    // Get the resolved influencer ID (database UUID)
+    const influencerIdResponse = await fetch('/api/influencer/id');
+    if (!influencerIdResponse.ok) {
+      alert('Failed to get influencer information');
+      return;
+    }
+    const influencerIdData = await influencerIdResponse.json();
+    const resolvedInfluencerId = influencerIdData.id;
+
     const tempId = Date.now();
     const optimisticUserMessage = { id: tempId, sender: 'user', content: userMessageContent, created_at: new Date().toISOString() };
-    ChatCache.appendToThread(influencerId, userId, optimisticUserMessage);
+    ChatCache.appendToThread(resolvedInfluencerId, userId, optimisticUserMessage);
     setIsAiReplying(true);
 
     try {
-      const { userMessage, aiMessage } = await ChatCache.sendMessage(influencerId, userMessageContent, userId);
-      ChatCache.replaceOptimistic(influencerId, userId, tempId, userMessage, aiMessage);
+      // 🚀 FAST MODE: Get AI response immediately, save in background
+      console.log('🚀 Using FAST MODE for better user experience');
+      const { userMessage, aiMessage, isFastMode } = await ChatCache.sendMessageFast(resolvedInfluencerId, userMessageContent, userId);
+      
+      // Replace optimistic message with real response immediately
+      ChatCache.replaceOptimistic(resolvedInfluencerId, userId, tempId, userMessage, aiMessage);
+      
+      if (isFastMode) {
+        console.log('🚀 Fast mode successful - AI response shown immediately, saving in background');
+      }
     } catch (err) {
-      setError(err.message);
-      ChatCache.removeMessageById(influencerId, userId, tempId);
-      alert(`Failed to send message: ${err.message}`);
+      const userFriendlyError = getUserFriendlyError(err);
+      logError('Failed to send message (fast mode)', err);
+      ChatCache.removeMessageById(resolvedInfluencerId, userId, tempId);
+      
+      // Debug: Log error structure to help troubleshoot
+      console.log('🔍 Error structure:', {
+        error: err,
+        status: (err as any)?.status,
+        statusCode: (err as any)?.statusCode,
+        message: (err as any)?.message,
+        userFriendlyError
+      });
+      
+      // Show toast notification instead of blocking error
+      // Check for 402 Payment Required status or token-related messages
+      const errorStatus = (err as any)?.status || (err as any)?.statusCode;
+      const errorMessage = (err as any)?.message || '';
+      
+      console.log('🔍 Toast condition check:', {
+        errorStatus,
+        errorMessage,
+        userFriendlyError,
+        condition1: errorStatus === 402,
+        condition2: errorMessage.includes('No tokens remaining'),
+        condition3: errorMessage.includes('Payment Required'),
+        condition4: userFriendlyError.includes('tokens')
+      });
+      
+      if (errorStatus === 402 || 
+          errorMessage.includes('No tokens remaining') || 
+          errorMessage.includes('Payment Required') ||
+          userFriendlyError.includes('tokens')) {
+        console.log('🎯 Showing token error toast');
+        toast.error('No tokens remaining. Please purchase a plan to continue chatting.', {
+          duration: 5000,
+          description: 'Upgrade your plan to continue the conversation'
+        });
+      } else {
+        console.log('🎯 Showing generic error toast');
+        toast.error(`Failed to send message: ${userFriendlyError}`);
+      }
     } finally {
       setIsAiReplying(false);
     }
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-screen-mobile bg-black text-white">Loading messages...</div>;
+    return (
+      <div className="flex items-center justify-center h-full bg-background text-foreground">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading messages...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (error) {
-    return <div className="flex items-center justify-center h-screen-mobile bg-black text-red-500">Error: {error}</div>;
-  }
 
   return (
-    <div className="flex flex-col h-screen-mobile bg-black text-white">
-      <header className="flex items-center justify-between pr-4 pl-2 py-4 border-b border-gray-800" style={{ backgroundColor: '#212121' }}>
-        <div className="flex items-center">
-          <button aria-label="Back" onClick={onGoBack} className="text-white mr-2 p-1">
-            <ChevronLeft className="h-7 w-7" />
+    <div className="flex flex-col h-full bg-background text-foreground pb-20">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={onGoBack} 
+            className="p-2 rounded-full hover:bg-secondary transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5" />
           </button>
           {influencer && (
             <>
-              <img src={influencer.avatar_url || '/path/to/default_avatar.png'} alt={influencer.display_name} className="w-10 h-10 rounded-full mr-3" />
-              <h1 className="text-xl font-bold">{influencer.display_name}</h1>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <img 
+                  src={influencer.avatar_url || '/default_avatar.png'} 
+                  alt={influencer.display_name} 
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold">{influencer.display_name}</h1>
+                <p className="text-sm text-muted-foreground">Online</p>
+              </div>
             </>
           )}
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
           <button
-            aria-label="Start video call"
             onClick={() => { setFeatureMessage('Video calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="focus:outline-none"
+            className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
-            <Video className="h-6 w-6 text-white" />
+            <Video className="h-5 w-5" />
           </button>
           <button
-            aria-label="Start voice call"
             onClick={() => { setFeatureMessage('Voice calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="focus:outline-none"
+            className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
-            <Phone className="h-6 w-6 text-white" />
+            <Phone className="h-5 w-5" />
           </button>
         </div>
-      </header>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.flatMap((message) => {
-          if (message.content && message.content.includes('\n')) {
-            return message.content.split('\n').map((line, index) => ({
-              ...message,
-              id: `${message.id}-${index}`,
-              content: line,
-            }));
-          }
-          return message;
-        }).map((message) => (
-          message.content && message.content.trim() && (
-            <div
-              key={message.id}
-              className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`p-3 rounded-lg max-w-xs lg:max-w-md ${
-                  message.sender === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-800 text-white'
-                }`}
-              >
-                <MessageFormatter content={message.content} />
+      </div>
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
+        {messages.length === 0 ? (
+          // Chat interface for new conversations - more focused on chatting
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center max-w-md">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
+                <img 
+                  src={influencer?.avatar_url || '/default_avatar.png'} 
+                  alt={influencer?.display_name} 
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              </div>
+              <h2 className="text-xl font-semibold mb-2">Chat with {influencer?.display_name}</h2>
+              <p className="text-muted-foreground mb-4">
+                Type your message below to start chatting!
+              </p>
+              <div className="text-sm text-muted-foreground">
+                💬 Ready to chat
               </div>
             </div>
-          )
-        ))}
+          </div>
+        ) : (
+          <>
+            {messages.flatMap((message) => {
+              if (message.content && message.content.includes('\n')) {
+                return message.content.split('\n').map((line, index) => ({
+                  ...message,
+                  id: `${message.id}-${index}`,
+                  content: line,
+                }));
+              }
+              return message;
+            }).map((message) => (
+              message.content && message.content.trim() && (
+                <div
+                  key={message.id}
+                  className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`p-3 rounded-xl max-w-xs lg:max-w-md ${
+                      message.sender === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary text-secondary-foreground'
+                    }`}
+                  >
+                    <MessageFormatter content={message.content} />
+                  </div>
+                </div>
+              )
+            ))}
+          </>
+        )}
         {isAiReplying && (
           <div className="flex items-end">
-            <img src={influencer?.avatar_url || '/path/to/default_avatar.png'} alt={influencer?.display_name} className="w-10 h-10 rounded-full mr-4" />
-            <div className="p-3 rounded-lg max-w-xs lg:max-w-md bg-gray-800 text-white">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mr-3">
+              <img 
+                src={influencer?.avatar_url || '/default_avatar.png'} 
+                alt={influencer?.display_name} 
+                className="w-6 h-6 rounded-full object-cover"
+              />
+            </div>
+            <div className="p-3 rounded-xl max-w-xs lg:max-w-md bg-secondary text-secondary-foreground">
               <div className="flex items-center justify-center space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
               </div>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
-      <footer className="p-4 border-t border-gray-800" style={{ backgroundColor: '#212121', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-        <div className="flex items-center space-x-2">
+      {/* Input Area - Fixed at bottom */}
+      <div className="fixed bottom-20 left-0 right-0 p-4 border-t border-border bg-card z-30">
+        <div className="flex items-center space-x-3">
           <Input
             type="text"
-            placeholder="Type a message"
+            placeholder="Type a message..."
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={(e) => {
@@ -178,21 +317,29 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
                 handleSendMessage();
               }
             }}
-            className="flex-1 p-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500"
+            className="flex-1 p-4 rounded-xl bg-input border border-border text-foreground placeholder-muted-foreground"
           />
-          <Button onClick={handleSendMessage} className="p-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
-            <Send className="h-6 w-6" />
+          <Button 
+            onClick={handleSendMessage} 
+            className="p-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            <Send className="h-5 w-5" />
           </Button>
         </div>
-      </footer>
+      </div>
       {showFeatureModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black opacity-60" onClick={() => setShowFeatureModal(false)} />
-          <div role="dialog" aria-modal="true" className="relative bg-[#121212] text-white rounded-xl p-6 max-w-sm mx-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowFeatureModal(false)} />
+          <div role="dialog" aria-modal="true" className="relative bg-card text-card-foreground rounded-xl p-6 max-w-sm mx-4 border border-border">
             <h3 className="text-lg font-semibold mb-2">Feature coming soon</h3>
-            <p className="text-sm text-gray-300">{featureMessage}</p>
+            <p className="text-sm text-muted-foreground">{featureMessage}</p>
             <div className="mt-4 flex justify-end">
-              <button onClick={() => setShowFeatureModal(false)} className="px-4 py-2 rounded-full bg-[#2C2C2E] hover:bg-gray-700">OK</button>
+              <button 
+                onClick={() => setShowFeatureModal(false)} 
+                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+              >
+                OK
+              </button>
             </div>
           </div>
         </div>

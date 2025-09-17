@@ -1,0 +1,61 @@
+{
+  "influencer": {
+    "id": "teste",
+    "name": "teste",
+    "handle": "teste",
+    "displayName": "teste",
+    "bio": "teste",
+    "avatarUrl": "/images/teste-avatar.jpg",
+    "coverImageUrl": "/images/teste-cover.jpg",
+    "websiteUrl": "http://taylor.devopai.net/",
+    "socialMedia": {
+      "instagram": "http://taylor.devopai.net/",
+      "twitter": "http://taylor.devopai.net/",
+      "tiktok": "http://taylor.devopai.net/"
+    }
+  },
+  "deployment": {
+    "domain": "taylor.devopai.net",
+    "baseUrl": "https://taylor.devopai.net",
+    "environment": "production",
+    "hostinger": {
+      "publicHtmlPath": "/public_html/teste-ai",
+      "sslEnabled": true
+    }
+  },
+  "setupDate": "2025-09-14T16:29:35.723Z",
+  "stripeProducts": {
+    "basic": "prod_T3Pd5kA2bRnGqy",
+    "premium": "prod_T3Pd193AlyMs1w",
+    "vip": "prod_T3PdkJmI9dpDM3"
+  },
+  "plans": [
+    {
+      "id": "basic",
+      "name": "Swiftie Basic",
+      "price": 2999,
+      "currency": "usd",
+      "interval": "month",
+      "stripePriceId": "price_1S7p8pRzyGIanNctSm8jSCkx",
+      "stripeProductId": "prod_T3Pd5kA2bRnGqy"
+    },
+    {
+      "id": "premium",
+      "name": "Eras Premium",
+      "price": 4999,
+      "currency": "usd",
+      "interval": "month",
+      "stripePriceId": "price_1S7p8pRzyGIanNctVJVr3fhl",
+      "stripeProductId": "prod_T3Pd193AlyMs1w"
+    },
+    {
+      "id": "vip",
+      "name": "Backstage VIP",
+      "price": 5999,
+      "currency": "usd",
+      "interval": "month",
+      "stripePriceId": "price_1S7p8qRzyGIanNctNg58R2iy",
+      "stripeProductId": "prod_T3PdkJmI9dpDM3"
+    }
+  ]
+}

@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Influencer configuration
+influencer.config.js
+influencer.config copy.js

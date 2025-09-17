@@ -1,196 +1,203 @@
-# Influencer Chat App - Next.js
+# 🎯 Influencer AI Chat Platform
 
-Este projeto foi convertido de React para Next.js, mantendo toda a funcionalidade original de chat com influenciadores AI.
+A complete AI chat platform that can be customized for any influencer. Each influencer gets their own branded website with AI chat, subscription plans, and token-based access control.
 
-## 🚀 Funcionalidades
+## 🚀 Quick Start
 
-- **Autenticação**: Sistema completo de login/registro com Supabase
-- **Chat em Tempo Real**: Conversas com influenciadores AI usando OpenAI
-- **Perfis de Usuário**: Gerenciamento de perfil e configurações
-- **Interface Responsiva**: Design otimizado para mobile e desktop
-- **Temas**: Suporte a modo escuro/claro
-
-## 📋 Pré-requisitos
-
-- Node.js 18+ 
-- npm ou yarn
-- Conta no Supabase
-- Chave da API OpenAI
-
-## ⚙️ Configuração
-
-### 1. Instalar Dependências
-
+### 1. Clone and Install
 ```bash
+git clone <your-repo-url>
+cd influencer-website
 npm install
 ```
 
-### 2. Configurar Variáveis de Ambiente
-
-Renomeie `.env.local` e configure as seguintes variáveis:
-
-```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anonima_supabase
-SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_supabase
-
-# OpenAI Configuration
-OPENAI_API_KEY=sua_chave_openai
-OPENAI_MODEL=gpt-4o-mini
+### 2. Setup Your Influencer
+```bash
+# Complete automated setup
+npm run setup
 ```
 
-### 3. Configurar Banco de Dados Supabase
+This will guide you through:
+- ✅ Influencer name and branding
+- ✅ AI personality and prompts  
+- ✅ Subscription plans and pricing
+- ✅ Stripe integration
+- ✅ Database configuration
+- ✅ Domain and deployment settings
 
-Execute os seguintes comandos SQL no seu projeto Supabase:
-
-```sql
--- Tabela de usuários
-CREATE TABLE users (
-  id UUID REFERENCES auth.users(id) PRIMARY KEY,
-  email TEXT NOT NULL,
-  username TEXT UNIQUE NOT NULL,
-  display_name TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Tabela de influenciadores
-CREATE TABLE influencers (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
-  prompt TEXT NOT NULL,
-  model_preset JSONB,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Tabela de mensagens de chat
-CREATE TABLE chat_messages (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES users(id) NOT NULL,
-  influencer_id UUID REFERENCES influencers(id) NOT NULL,
-  sender TEXT NOT NULL CHECK (sender IN ('user', 'influencer')),
-  content TEXT NOT NULL,
-  read_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Políticas RLS
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
-
--- Política para usuários
-CREATE POLICY "Users can view own profile" ON users
-  FOR SELECT USING (auth.uid() = id);
-
-CREATE POLICY "Users can update own profile" ON users
-  FOR UPDATE USING (auth.uid() = id);
-
--- Políticas para mensagens de chat
-CREATE POLICY "Users can view own messages" ON chat_messages
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own messages" ON chat_messages
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-```
-
-## 🏃‍♂️ Executando o Projeto
-
-### Modo Desenvolvimento
+### 3. Start Development
 ```bash
 npm run dev
 ```
 
-### Build para Produção
+Visit `http://localhost:3002` to see your influencer's website!
+
+## 🎭 Multiple Influencer Sites (Independent Operation)
+
+Create multiple influencer sites that operate completely independently:
+
+### Quick Setup (Recommended)
 ```bash
-npm run build
-npm start
+# Create a new influencer site
+npm run create:site
+
+# Follow the prompts, then:
+cd influencer-website-[handle]
+npm install
+npm run setup:config
+npm run setup:stripe  
+npm run setup:database
+npm run dev
 ```
 
-## 📁 Estrutura do Projeto
+### Manual Setup
+```bash
+# Copy the entire project
+cp -r influencer-website influencer-website-selena
+cd influencer-website-selena
 
-```
-src/
-├── app/
-│   ├── api/
-│   │   └── post-message/
-│   │       └── route.ts          # API route para envio de mensagens
-│   ├── globals.css               # Estilos globais
-│   ├── layout.tsx               # Layout principal
-│   └── page.tsx                 # Página principal (App convertido)
-├── components/
-│   ├── Auth/                    # Componentes de autenticação
-│   ├── Chat/                    # Componentes de chat
-│   ├── Settings/                # Componentes de configurações
-│   └── ui/                      # Componentes de UI
-├── lib/
-│   ├── supabaseClient.ts        # Cliente Supabase
-│   ├── chatCache.ts             # Cache de chat
-│   └── utils.ts                 # Utilitários
-└── api/
-    └── index.ts                 # API client
+# Configure the influencer
+npm run setup:config
+
+# Set up Stripe products
+npm run setup:stripe
+
+# Set up database
+npm run setup:database
+
+# Start development
+npm run dev
 ```
 
-## 🔄 Principais Mudanças da Conversão
+### What Makes This Independent:
+- ✅ **Users sign up directly** (no admin setup required)
+- ✅ **Conversations created automatically** when users start chatting
+- ✅ **Separate subscription plans** (not shared between influencers)
+- ✅ **Complete data isolation** (users can't access other influencer sites)
+- ✅ **Independent billing** (separate Stripe products per influencer)
 
-### React Router → Next.js App Router
-- Removido `react-router-dom`
-- Sistema de navegação baseado em estado mantido na página principal
-- API routes do Next.js para endpoints backend
+📖 **[Complete Multi-Influencer Guide](./MULTI_INFLUENCER_SETUP_GUIDE.md)**
 
-### Vite → Next.js
-- Configuração de build migrada para Next.js
-- Variáveis de ambiente adaptadas para padrão Next.js (`NEXT_PUBLIC_`)
-- Sistema de importação atualizado para aliases do Next.js
+## 📋 Available Commands
 
-### TypeScript
-- Todos os arquivos `.jsx` convertidos para `.tsx`
-- Tipos TypeScript adicionados onde necessário
-- Configuração ESLint ajustada para Next.js
+| Command | Description |
+|---------|-------------|
+| `npm run create:site` | **Create new independent influencer site** |
+| `npm run setup:config` | Configure influencer (name, branding, plans) |
+| `npm run setup:stripe` | Set up Stripe products for influencer |
+| `npm run setup:database` | Set up database for influencer |
+| `npm run setup` | Complete automated setup (legacy) |
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run deploy` | Deploy to Hostinger |
+| `npm run db:studio` | Open database studio |
+| `npm run tokens:add` | Add tokens to user (admin) |
+| `npm run tokens:test` | Test token system |
 
-## 🛠️ Tecnologias Utilizadas
+## 🎨 Features
 
-- **Next.js 15** - Framework React
-- **TypeScript** - Tipagem estática
-- **Tailwind CSS** - Estilização
-- **Supabase** - Backend e autenticação
-- **OpenAI API** - IA para respostas dos influenciadores
-- **Radix UI** - Componentes de UI
-- **Framer Motion** - Animações
+- **🤖 AI-Powered Chat**: Customizable AI personality for each influencer
+- **💳 Subscription Plans**: Multiple pricing tiers with Stripe integration
+- **🎫 Token System**: Pay-per-message or subscription-based access
+- **🎨 Custom Branding**: Colors, logos, and styling per influencer
+- **📱 Mobile-First**: Responsive design optimized for mobile
+- **🔒 Secure**: User authentication and data isolation
+- **🚀 Production Ready**: Easy deployment to Hostinger
 
-## 🐛 Solução de Problemas
+## 🗄️ Database Isolation
 
-### Erro de Build
-Se encontrar erros durante o build, verifique:
-1. Todas as variáveis de ambiente estão configuradas
-2. As dependências estão instaladas corretamente
-3. O banco de dados Supabase está configurado
+Each influencer site has complete data isolation:
+- ✅ **Separate conversations** per influencer
+- ✅ **Independent token balances** per influencer  
+- ✅ **Isolated subscription data** per influencer
+- ✅ **Separate chat messages** per influencer
 
-### Problemas de Autenticação
-- Verifique se as URLs do Supabase estão corretas
-- Confirme que as políticas RLS estão ativas
-- Teste a conectividade com o Supabase
+Multiple influencers can safely share the same Supabase database.
 
-### Problemas com IA
-- Verifique se a chave da OpenAI está válida
-- Confirme se há créditos disponíveis na conta OpenAI
-- Teste a API diretamente se necessário
+## 🛡️ Safety Features
 
-## 📝 Notas de Desenvolvimento
+- ✅ **No destructive scripts** - All scripts are safe and non-destructive
+- ✅ **Safe setup** - Only adds data, never deletes
+- ✅ **Backup-friendly** - All operations are reversible
+- ✅ **Error handling** - Comprehensive error checking
 
-- O projeto mantém compatibilidade total com a versão React original
-- Todas as funcionalidades foram preservadas na migração
-- O sistema de cache de chat foi mantido para performance
-- A estrutura de componentes permanece inalterada
+## 🚨 Important Notes
 
-## 🤝 Contribuição
+### ⚠️ Before You Start
+- **Backup your data** before making major changes
+- **Test locally first** before deploying to production
+- **Use staging domains** for testing
 
-Para contribuir com o projeto:
-1. Faça um fork do repositório
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Abra um Pull Request
+### 💡 Best Practices
+1. **Test the setup** - Always test on localhost first
+2. **Use staging** - Deploy to a staging domain first  
+3. **Monitor tokens** - Check token usage regularly
+4. **Update regularly** - Keep dependencies updated
 
-## 📄 Licença
+## 🆘 Troubleshooting
 
-Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
+### Common Issues
+
+**"User not found in database"**
+```bash
+npm run setup  # Fixes missing user data
+```
+
+**"No tokens remaining"**
+```bash
+npm run tokens:add  # Add more tokens for testing
+```
+
+**"Chat messages failing"**
+```bash
+npm run setup  # Recreates conversations
+```
+
+**"Stripe errors"**
+- Check your Stripe keys in the configuration
+- Verify product and price IDs
+- Test with Stripe test mode first
+
+### Debug Commands
+
+```bash
+# Check database
+npm run db:studio
+
+# Test token system  
+npm run tokens:test
+
+# Add tokens to user
+npm run tokens:add
+```
+
+## 📞 Support
+
+If you encounter issues:
+
+1. Check the console logs for error messages
+2. Verify all configuration fields are correct
+3. Test database connectivity
+4. Verify Stripe and OpenAI API keys
+5. Check that all required files exist
+
+## 🎉 Success!
+
+Once setup is complete, you'll have:
+
+- ✅ Fully functional influencer site
+- ✅ Isolated user data and conversations
+- ✅ Working subscription system
+- ✅ AI-powered chat functionality
+- ✅ Production-ready deployment setup
+
+You can now create as many influencer sites as needed!
+
+---
+
+## 📚 Additional Resources
+
+- **[Multi-Influencer Setup Guide](./MULTI_INFLUENCER_SETUP_GUIDE.md)** - Detailed guide for multiple sites
+- **[Chat Isolation Fix](./CHAT_ISOLATION_FIX.md)** - Technical details about chat isolation
+- **[Safe Scripts Guide](./SAFE_SCRIPTS_GUIDE.md)** - Information about safe operations
+- **[Stripe Setup Guide](./STRIPE_SHARED_SETUP.md)** - Stripe configuration details
