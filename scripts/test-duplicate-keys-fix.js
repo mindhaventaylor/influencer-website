@@ -48,3 +48,4 @@ console.log('- All navigation items work correctly');
 
 console.log('\n🚀 Ready for testing!');
 console.log('Visit http://localhost:3005 and test the navigation.');
+

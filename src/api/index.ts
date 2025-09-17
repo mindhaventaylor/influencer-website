@@ -197,6 +197,76 @@ const api = {
     }
     return await response.json();
   },
+
+  // 🚀 FAST MODE: Get AI response immediately without saving to database
+  async postMessageFast(influencerId: string, content: string, userId: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw createUserFriendlyError('Please sign in to continue', 401);
+    }
+
+    const response = await fetch('/api/post-message-fast', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        influencerId,
+        content,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = getUserFriendlyError({
+        message: errorData.error || `HTTP ${response.status}`,
+        status: response.status
+      });
+      throw createUserFriendlyError(errorMessage, response.status);
+    }
+
+    const { userMessage, aiMessage, isFastMode } = await response.json();
+    return { userMessage, aiMessage, isFastMode };
+  },
+
+  // 💾 BACKGROUND SAVE: Save messages to database in background
+  async saveMessagesBackground(influencerId: string, userMessage: any, aiMessage: any, userId: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.warn('No session available for background save');
+      return { success: false, error: 'No session' };
+    }
+
+    try {
+      const response = await fetch('/api/save-messages-background', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          influencerId,
+          userMessage,
+          aiMessage,
+          userId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Background save failed:', errorData.error);
+        return { success: false, error: errorData.error };
+      }
+
+      const result = await response.json();
+      console.log('💾 Messages saved in background successfully');
+      return result;
+    } catch (error) {
+      console.error('Background save error:', error);
+      return { success: false, error: error.message };
+    }
+  },
 };
 
 export default api;

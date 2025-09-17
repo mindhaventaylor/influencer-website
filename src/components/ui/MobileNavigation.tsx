@@ -7,18 +7,20 @@ interface MobileNavigationProps {
   currentScreen: string;
   onScreenChange: (screen: string) => void;
   onCall: (type: 'voice' | 'video') => void;
+  onGoToChat: () => void;
 }
 
 export default function MobileNavigation({ 
   currentScreen, 
   onScreenChange, 
-  onCall 
+  onCall,
+  onGoToChat
 }: MobileNavigationProps) {
   const [showCallOptions, setShowCallOptions] = useState(false);
 
   const navigationItems = [
     { id: 'ChatList', icon: Home, label: 'Home', key: 'nav-home' },
-    { id: 'ChatThread', icon: MessageCircle, label: 'Chat', key: 'nav-chat' },
+    { id: 'ChatThread', icon: MessageCircle, label: 'Chat', key: 'nav-chat', onClick: onGoToChat },
     { id: 'ProfileScreen', icon: User, label: 'Profile', key: 'nav-profile' },
     { id: 'SettingsScreen', icon: Settings, label: 'Settings', key: 'nav-settings' },
   ];
@@ -72,7 +74,7 @@ export default function MobileNavigation({
             return (
               <button
                 key={item.key}
-                onClick={() => onScreenChange(item.id)}
+                onClick={() => item.onClick ? item.onClick() : onScreenChange(item.id)}
                 className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-colors ${
                   isActive 
                     ? 'text-primary' 

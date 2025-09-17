@@ -61,3 +61,4 @@ async function testLoginBottomBarFix() {
 // Run the test
 testLoginBottomBarFix();
 
+

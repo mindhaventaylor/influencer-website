@@ -54,3 +54,4 @@ async function testProfilePlanFix() {
 // Run the test
 testProfilePlanFix();
 
+

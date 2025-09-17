@@ -255,7 +255,29 @@ export default function Home() {
   };
 
   const handleGoToChat = () => {
-    setCurrentScreen("ChatList");
+    if (!user || !user.token) {
+      console.error('User not authenticated, redirecting to sign in');
+      setCurrentScreen("SignIn");
+      return;
+    }
+    
+    // Get influencer ID from config for instant access
+    try {
+      const { getInfluencerDatabaseId } = require('@/lib/config');
+      const configInfluencerId = getInfluencerDatabaseId();
+      
+      if (configInfluencerId) {
+        setInfluencerId(configInfluencerId);
+        console.log('⚡ Chat tab: Using config influencerId:', configInfluencerId);
+      } else {
+        console.log('⚠️ No influencer ID in config, ChatThread will fetch automatically');
+      }
+    } catch (error) {
+      console.log('⚠️ Error reading config, ChatThread will fetch automatically:', error.message);
+    }
+    
+    // Navigate immediately
+    setCurrentScreen("ChatThread");
   };
 
   const handleSignOut = async () => {
@@ -352,6 +374,7 @@ export default function Home() {
       break;
     case "ChatThread":
       console.log('🔄 Rendering ChatThread with influencerId:', influencerId, 'userId:', user?.id);
+      // If influencerId is null, ChatThread will fetch it automatically
       screenComponent = <ChatThread onGoBack={handleGoBack} influencerId={influencerId} userToken={user?.token} userId={user?.id} />;
       break;
     case "SettingsScreen":
@@ -401,6 +424,7 @@ export default function Home() {
               currentScreen={currentScreen}
               onScreenChange={setCurrentScreen}
               onCall={handleCall}
+              onGoToChat={handleGoToChat}
             />
           )}
         </div>

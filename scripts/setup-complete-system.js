@@ -170,10 +170,10 @@ async function setupCompleteSystem() {
     
     const influencerData = {
       name: config.influencer.name || 'Teste',
-      prompt: config.influencer.prompt || `You are ${config.influencer.name || 'Teste'}, a helpful AI assistant. You should respond in a friendly, engaging manner while staying true to your personality.`,
-      model_preset: config.influencer.modelPreset || {
-        temperature: 0.7,
-        max_tokens: 1000,
+      prompt: config.ai.personalityPrompt || `You are ${config.influencer.name || 'Teste'}, a helpful AI assistant. You should respond in a friendly, engaging manner while staying true to your personality.`,
+      model_preset: {
+        temperature: config.ai.temperature || 0.7,
+        max_tokens: config.ai.maxTokens || 1000,
         top_p: 0.9
       },
       is_active: true,
@@ -206,6 +206,15 @@ async function setupCompleteSystem() {
       influencerId = newInfluencer.id;
       console.log(`✅ Created new influencer: ${influencerData.name} (${influencerId})`);
     }
+
+    // Save influencer ID to config for faster access
+    console.log('💾 Saving influencer ID to config...');
+    const updatedConfig = { ...config };
+    updatedConfig.influencer.databaseId = influencerId;
+    
+    // Write the updated config back to the file
+    fs.writeFileSync('./influencer.config.js', `module.exports = ${JSON.stringify(updatedConfig, null, 2)};`);
+    console.log(`✅ Saved influencer database ID to config: ${influencerId}`);
 
     // 3. Update existing users with missing data
     console.log('\n3️⃣ Updating users with missing data...');

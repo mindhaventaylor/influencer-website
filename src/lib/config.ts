@@ -12,6 +12,7 @@ export interface InfluencerConfig {
     bio: string;
     avatarUrl: string;
     websiteUrl: string;
+    databaseId?: string; // Database UUID for instant access
     socialMedia: {
       instagram: string;
       twitter: string;
@@ -80,6 +81,9 @@ export const getStripeConfig = () => config.stripe;
 export const getAIConfig = () => config.ai;
 export const getDatabaseConfig = () => config.database;
 export const getDeploymentConfig = () => config.deployment;
+
+// Get influencer database ID for instant access
+export const getInfluencerDatabaseId = () => config.influencer.databaseId;
 
 // Environment variables derived from config
 export const getEnvVars = () => ({

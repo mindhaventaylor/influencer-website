@@ -38,3 +38,4 @@ console.log('- Only requires userId to initialize');
 console.log('- Handles both explicit influencerId and navigation scenarios\n');
 
 console.log('🎉 Test the fix by clicking "Chat" in the bottom navigation!');
+

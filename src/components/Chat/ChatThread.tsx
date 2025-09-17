@@ -31,6 +31,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
       }
       
       console.log('🔄 ChatThread: Initializing with influencerId:', influencerId, 'userId:', userId);
+      console.log('📋 ChatThread: influencerId is', influencerId ? 'provided' : 'null - will fetch automatically');
       
       try {
         setLoading(true);
@@ -115,10 +116,19 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
     setIsAiReplying(true);
 
     try {
-      const { userMessage, aiMessage } = await ChatCache.sendMessage(resolvedInfluencerId, userMessageContent, userId);
+      // 🚀 FAST MODE: Get AI response immediately, save in background
+      console.log('🚀 Using FAST MODE for better user experience');
+      const { userMessage, aiMessage, isFastMode } = await ChatCache.sendMessageFast(resolvedInfluencerId, userMessageContent, userId);
+      
+      // Replace optimistic message with real response immediately
       ChatCache.replaceOptimistic(resolvedInfluencerId, userId, tempId, userMessage, aiMessage);
+      
+      if (isFastMode) {
+        console.log('🚀 Fast mode successful - AI response shown immediately, saving in background');
+      }
     } catch (err) {
       const userFriendlyError = getUserFriendlyError(err);
+      logError('Failed to send message (fast mode)', err);
       setError(userFriendlyError);
       ChatCache.removeMessageById(resolvedInfluencerId, userId, tempId);
       alert(`Failed to send message: ${userFriendlyError}`);
@@ -194,7 +204,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
         {messages.length === 0 ? (
-          // Welcome message for new conversations
+          // Chat interface for new conversations - more focused on chatting
           <div className="flex items-center justify-center h-full">
             <div className="text-center max-w-md">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
@@ -204,12 +214,12 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
                   className="w-12 h-12 rounded-full object-cover"
                 />
               </div>
-              <h2 className="text-xl font-semibold mb-2">Welcome to {influencer?.display_name}!</h2>
+              <h2 className="text-xl font-semibold mb-2">Chat with {influencer?.display_name}</h2>
               <p className="text-muted-foreground mb-4">
-                Start a conversation by typing a message below. I'm here to chat with you!
+                Type your message below to start chatting!
               </p>
               <div className="text-sm text-muted-foreground">
-                💬 Send your first message to begin
+                💬 Ready to chat
               </div>
             </div>
           </div>
