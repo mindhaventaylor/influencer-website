@@ -6,6 +6,7 @@ import MessageFormatter from '@/components/ui/MessageFormatter';
 import ChatCache from '@/lib/chatCache';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import { logError } from '@/lib/errorLogger';
+import { toast } from 'sonner';
 
 const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
   const [messages, setMessages] = useState([]);
@@ -13,7 +14,6 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [isAiReplying, setIsAiReplying] = useState(false);
-  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [featureMessage, setFeatureMessage] = useState('');
@@ -60,7 +60,11 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
           if (mounted) setMessages(msgs);
         }
       } catch (err) {
-        if (mounted) setError(err.message);
+        if (mounted) {
+          const userFriendlyError = getUserFriendlyError(err);
+          logError('Failed to initialize chat', err);
+          toast.error(userFriendlyError);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -129,9 +133,45 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
     } catch (err) {
       const userFriendlyError = getUserFriendlyError(err);
       logError('Failed to send message (fast mode)', err);
-      setError(userFriendlyError);
       ChatCache.removeMessageById(resolvedInfluencerId, userId, tempId);
-      alert(`Failed to send message: ${userFriendlyError}`);
+      
+      // Debug: Log error structure to help troubleshoot
+      console.log('🔍 Error structure:', {
+        error: err,
+        status: (err as any)?.status,
+        statusCode: (err as any)?.statusCode,
+        message: (err as any)?.message,
+        userFriendlyError
+      });
+      
+      // Show toast notification instead of blocking error
+      // Check for 402 Payment Required status or token-related messages
+      const errorStatus = (err as any)?.status || (err as any)?.statusCode;
+      const errorMessage = (err as any)?.message || '';
+      
+      console.log('🔍 Toast condition check:', {
+        errorStatus,
+        errorMessage,
+        userFriendlyError,
+        condition1: errorStatus === 402,
+        condition2: errorMessage.includes('No tokens remaining'),
+        condition3: errorMessage.includes('Payment Required'),
+        condition4: userFriendlyError.includes('tokens')
+      });
+      
+      if (errorStatus === 402 || 
+          errorMessage.includes('No tokens remaining') || 
+          errorMessage.includes('Payment Required') ||
+          userFriendlyError.includes('tokens')) {
+        console.log('🎯 Showing token error toast');
+        toast.error('No tokens remaining. Please purchase a plan to continue chatting.', {
+          duration: 5000,
+          description: 'Upgrade your plan to continue the conversation'
+        });
+      } else {
+        console.log('🎯 Showing generic error toast');
+        toast.error(`Failed to send message: ${userFriendlyError}`);
+      }
     } finally {
       setIsAiReplying(false);
     }
@@ -148,16 +188,6 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full bg-background text-destructive">
-        <div className="text-center">
-          <p className="text-lg font-semibold mb-2">Error</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground pb-20">

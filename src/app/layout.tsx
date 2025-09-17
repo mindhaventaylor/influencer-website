@@ -3,6 +3,7 @@ import "./globals.css";
 import ViewportHeightHandler from "@/components/ui/ViewportHeightHandler";
 import { DynamicMetadata } from "@/components/DynamicMetadata";
 import { getInfluencerInfo } from "@/lib/config";
+import { Toaster } from "@/components/ui/sonner";
 
 // Dynamic metadata based on influencer config
 export async function generateMetadata(): Promise<Metadata> {
@@ -55,6 +56,7 @@ export default function RootLayout({
         <div id="root" className="h-screen-mobile overflow-hidden influencer-branding">
           {children}
         </div>
+        <Toaster />
       </body>
     </html>
   );

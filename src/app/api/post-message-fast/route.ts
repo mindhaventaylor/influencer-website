@@ -102,6 +102,27 @@ export async function POST(request: NextRequest) {
     const userId = user.id;
     console.log(`🚀 FAST MODE: Authenticated user ID: ${userId}`);
 
+    // Check if user has tokens before proceeding
+    console.log('🚀 FAST MODE: Checking user tokens...');
+    const { data: conversation, error: convError } = await supabaseService
+      .from('conversations')
+      .select('id, tokens')
+      .eq('user_id', userId)
+      .eq('influencer_id', influencerId)
+      .single();
+
+    if (convError && convError.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('Error fetching conversation:', convError);
+      throw new Error(`Failed to fetch conversation: ${convError.message}`);
+    }
+
+    // If conversation exists, check tokens
+    if (conversation && (conversation.tokens || 0) <= 0) {
+      return NextResponse.json({ 
+        error: 'No tokens remaining. Please purchase a plan to continue chatting.' 
+      }, { status: 402 }); // 402 Payment Required
+    }
+
     // Get influencer data for AI prompt
     console.log('🚀 FAST MODE: Fetching influencer data...');
     const { data: influencer, error: influencerError } = await supabaseService

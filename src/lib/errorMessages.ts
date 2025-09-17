@@ -50,6 +50,13 @@ export function getUserFriendlyError(error: any): string {
     return ERROR_MESSAGES.AUTH_DENIED;
   }
   
+  // Payment required errors (402)
+  if (message.includes('402') || 
+      message.includes('Payment Required') || 
+      message.includes('No tokens remaining')) {
+    return 'No tokens remaining. Please purchase a plan to continue chatting.';
+  }
+  
   // Not found errors
   if (message.includes('404') || 
       message.includes('Not found')) {
