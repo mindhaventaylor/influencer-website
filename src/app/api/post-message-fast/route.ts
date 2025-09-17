@@ -12,21 +12,29 @@ const openaiApiKey = config.ai.openaiApiKey;
 // Service role client (can bypass RLS) - initialized only when needed
 let supabaseService: any;
 
-async function generateInfluencerReply(influencerModelPreset: any, priorMessages: any[], latestUserMessage: string, userId: string, influencerName: string) {
-  // Reverse the messages to get chronological order (oldest first)
-  const reversedMessages = priorMessages.reverse();
+async function generateInfluencerReply(influencerModelPreset: any, priorMessages: any[], latestUserMessage: string, userId: string, influencerName: string, conversationId: string) {
+  // --- ensure we don't mutate priorMessages ---
+  const chronological = priorMessages.slice().reverse();
   
-  // Get the last messages (including the current one) for chat history
-  const allMessages = [...reversedMessages, { sender: 'user', content: latestUserMessage }];
-  
-  // Convert messages to the format expected by the custom API
-  const chatHistory = allMessages.map((msg: any) => [
-    msg.sender === 'user' ? 'user' : 'assistant',
-    msg.content
-  ]);
+  // chat history pairs for backend
+  const chatHistory = [...chronological, { sender: 'user', content: latestUserMessage }]
+    .map((msg: any) => [msg.sender === 'user' ? 'user' : 'assistant', msg.content]);
 
-  // Count messages by user
-  const msgsCntByUser = allMessages.filter((msg: any) => msg.sender === 'user').length;
+  // Get authoritative user message count for the whole conversation from DB
+  const { count: userMsgCount, error: countError } = await supabaseService
+    .from('chat_messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('conversation_id', conversationId)
+    .eq('sender', 'user');
+
+  if (countError) {
+    console.error('Failed to count user messages, falling back to local count:', countError);
+  }
+
+  // Use DB count if available, otherwise fallback to computed length
+  const msgsCntByUser = typeof userMsgCount === 'number' ? userMsgCount : chatHistory.filter((m: any) => m[0] === 'user').length;
+
+  console.info('msgs_cnt_by_user ->', msgsCntByUser);
 
   // Use the personality prompt from the database (passed from the main function)
   const personalityPrompt = influencerModelPreset.system_prompt || `You are ${influencerName}, a helpful AI assistant.`;
@@ -38,7 +46,6 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
     influencer_personality_prompt: personalityPrompt,
     chat_history: chatHistory,
     msgs_cnt_by_user: msgsCntByUser,
-    is_summary_turn: false
   };
 
   // Log the request being sent to AI for debugging
@@ -159,7 +166,8 @@ export async function POST(request: NextRequest) {
       priorMessages,
       content,
       userId,
-      influencer.name
+      influencer.name,
+      conversation?.id || 'new-conversation' // Pass conversation ID or fallback
     );
     console.log('🚀 FAST MODE: AI reply generated successfully!');
 
