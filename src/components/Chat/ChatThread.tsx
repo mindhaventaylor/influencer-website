@@ -278,25 +278,25 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
 
   if (loading) {
     return (
-      <div className="flex flex-col h-screen bg-black text-white">
+      <div className="flex flex-col h-screen bg-background text-foreground">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between p-6 border-b border-gray-800 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <button
               onClick={onGoBack}
-              className="p-2 rounded-full hover:bg-gray-800 transition-colors"
+              className="p-2 rounded-full hover:bg-secondary transition-colors"
             >
-              <ChevronLeft className="h-6 w-6 text-white" />
+              <ChevronLeft className="h-6 w-6 text-foreground" />
             </button>
-            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="w-12 h-12 rounded-full bg-secondary animate-pulse"></div>
             <div>
-              <div className="w-24 h-5 bg-gray-700 rounded animate-pulse mb-2"></div>
-              <div className="w-16 h-4 bg-gray-700 rounded animate-pulse"></div>
+              <div className="w-24 h-5 bg-secondary rounded animate-pulse mb-2"></div>
+              <div className="w-16 h-4 bg-secondary rounded animate-pulse"></div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
-            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="w-12 h-12 rounded-full bg-secondary animate-pulse"></div>
+            <div className="w-12 h-12 rounded-full bg-secondary animate-pulse"></div>
           </div>
         </div>
         
@@ -304,12 +304,12 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {/* AI Message Skeleton */}
           <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="w-8 h-8 rounded-full bg-secondary animate-pulse"></div>
             <div className="flex-1">
-              <div className="bg-gray-800 rounded-2xl p-4 max-w-xs">
+              <div className="bg-secondary rounded-2xl p-4 max-w-xs">
                 <div className="space-y-2">
-                  <div className="w-full h-4 bg-gray-700 rounded animate-pulse"></div>
-                  <div className="w-3/4 h-4 bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-full h-4 bg-muted rounded animate-pulse"></div>
+                  <div className="w-3/4 h-4 bg-muted rounded animate-pulse"></div>
                 </div>
               </div>
             </div>
@@ -325,18 +325,18 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                 </div>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="w-8 h-8 rounded-full bg-secondary animate-pulse"></div>
           </div>
           
           {/* AI Message Skeleton */}
           <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="w-8 h-8 rounded-full bg-secondary animate-pulse"></div>
             <div className="flex-1">
-              <div className="bg-gray-800 rounded-2xl p-4 max-w-sm">
+              <div className="bg-secondary rounded-2xl p-4 max-w-sm">
                 <div className="space-y-2">
-                  <div className="w-full h-4 bg-gray-700 rounded animate-pulse"></div>
-                  <div className="w-4/5 h-4 bg-gray-700 rounded animate-pulse"></div>
-                  <div className="w-1/2 h-4 bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-full h-4 bg-muted rounded animate-pulse"></div>
+                  <div className="w-4/5 h-4 bg-muted rounded animate-pulse"></div>
+                  <div className="w-1/2 h-4 bg-muted rounded animate-pulse"></div>
                 </div>
               </div>
             </div>
@@ -346,8 +346,8 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
         {/* Input Skeleton */}
         <div className="p-6 border-t border-gray-800">
           <div className="flex items-center space-x-3">
-            <div className="flex-1 h-12 bg-gray-700 rounded-full animate-pulse"></div>
-            <div className="w-12 h-12 bg-gray-700 rounded-full animate-pulse"></div>
+            <div className="flex-1 h-12 bg-secondary rounded-full animate-pulse"></div>
+            <div className="w-12 h-12 bg-secondary rounded-full animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -361,9 +361,9 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
         <div className="flex items-center space-x-3">
           <button
             onClick={onGoBack}
-            className="p-2 rounded-full hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-full hover:bg-secondary transition-colors"
           >
-            <ChevronLeft className="h-6 w-6 text-white" />
+            <ChevronLeft className="h-6 w-6 text-foreground" />
           </button>
           {influencer && (
             <>
@@ -375,8 +375,8 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                 />
               </div>
               <div>
-                <h1 className="text-lg font-semibold text-white">{influencer.display_name || clientInfluencer.displayName}</h1>
-                <p className="text-sm text-gray-400">Online</p>
+                <h1 className="text-lg font-semibold text-foreground">{influencer.display_name || clientInfluencer.displayName}</h1>
+                <p className="text-sm text-muted-foreground">Online</p>
               </div>
             </>
           )}
@@ -384,13 +384,13 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
         <div className="flex items-center space-x-2">
           <button
             onClick={() => { setFeatureMessage('Video calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+            className="p-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
             <Video className="h-5 w-5 text-gray-400" />
           </button>
           <button
             onClick={() => { setFeatureMessage('Voice calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+            className="p-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
             <Phone className="h-5 w-5 text-gray-400" />
           </button>
@@ -411,8 +411,8 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h2 className="text-2xl font-semibold mb-2 text-white">Chat with {influencer?.display_name || clientInfluencer.displayName}</h2>
-              <p className="text-gray-400 mb-4">
+              <h2 className="text-2xl font-semibold mb-2 text-foreground">Chat with {influencer?.display_name || clientInfluencer.displayName}</h2>
+              <p className="text-muted-foreground mb-4">
                 Type your message below to start chatting!
               </p>
               <div className="text-sm text-gray-500">
@@ -428,7 +428,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                 <button
                   onClick={handleLoadMore}
                   disabled={loadingMore}
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-sm text-gray-300 transition-colors"
+                  className="px-4 py-2 bg-secondary hover:bg-secondary/80 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-sm text-secondary-foreground transition-colors"
                 >
                   {loadingMore ? (
                     <div className="flex items-center space-x-2">

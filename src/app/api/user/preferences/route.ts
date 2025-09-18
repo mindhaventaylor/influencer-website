@@ -21,6 +21,8 @@ export async function POST(request: NextRequest) {
         data_sharing_consent: preferences.dataSharingConsent,
         personalization_consent: preferences.personalizationConsent,
         updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
       });
 
     if (error) {

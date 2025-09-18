@@ -4,6 +4,7 @@ import ViewportHeightHandler from "@/components/ui/ViewportHeightHandler";
 import { DynamicMetadata } from "@/components/DynamicMetadata";
 import { getInfluencerInfo } from "@/lib/config";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // Dynamic metadata based on influencer config
 export async function generateMetadata(): Promise<Metadata> {
@@ -43,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -52,11 +53,13 @@ export default function RootLayout({
         <DynamicMetadata />
       </head>
       <body className="antialiased">
-        <ViewportHeightHandler />
-        <div id="root" className="min-h-screen influencer-branding">
-          {children}
-        </div>
-        <Toaster />
+        <ThemeProvider>
+          <ViewportHeightHandler />
+          <div id="root" className="min-h-screen influencer-branding">
+            {children}
+          </div>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

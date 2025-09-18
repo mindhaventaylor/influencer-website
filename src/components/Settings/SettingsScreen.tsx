@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ExternalLink, ArrowLeft, Trash2, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import ThemeToggle from '@/components/ui/ThemeToggle';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface SettingsScreenProps {
   onGoToChat: () => void;
@@ -34,7 +36,7 @@ const SettingsScreen = ({
   onGoBack
 }: SettingsScreenProps) => {
   const { user } = useAuth();
-  const [darkMode, setDarkMode] = useState(true);
+  const { theme } = useTheme();
   const [dataSharingConsent, setDataSharingConsent] = useState(false);
   const [personalizationConsent, setPersonalizationConsent] = useState(false);
   const [isDeletingChatHistory, setIsDeletingChatHistory] = useState(false);
@@ -48,18 +50,15 @@ const SettingsScreen = ({
         const response = await fetch(`/api/user/preferences?userId=${user.id}`);
         if (response.ok) {
           const { preferences } = await response.json();
-          setDarkMode(preferences.dark_mode);
           setDataSharingConsent(preferences.data_sharing_consent);
           setPersonalizationConsent(preferences.personalization_consent);
         }
       } catch (error) {
         console.error('Error loading preferences:', error);
         // Fallback to localStorage
-        const savedDarkMode = localStorage.getItem('darkMode');
         const savedDataSharing = localStorage.getItem('dataSharingConsent');
         const savedPersonalization = localStorage.getItem('personalizationConsent');
         
-        if (savedDarkMode !== null) setDarkMode(JSON.parse(savedDarkMode));
         if (savedDataSharing !== null) setDataSharingConsent(JSON.parse(savedDataSharing));
         if (savedPersonalization !== null) setPersonalizationConsent(JSON.parse(savedPersonalization));
       }
@@ -69,7 +68,10 @@ const SettingsScreen = ({
   }, [user?.id]);
 
   // Save preferences when they change
-  const savePreferences = async (preferences: any) => {
+  const savePreferences = async (preferences: {
+    dataSharingConsent: boolean;
+    personalizationConsent: boolean;
+  }) => {
     if (!user?.id) return;
     
     try {
@@ -80,13 +82,16 @@ const SettingsScreen = ({
         },
         body: JSON.stringify({
           userId: user.id,
-          preferences,
+          preferences: {
+            darkMode: theme === 'dark',
+            dataSharingConsent: preferences.dataSharingConsent,
+            personalizationConsent: preferences.personalizationConsent,
+          },
         }),
       });
     } catch (error) {
       console.error('Error saving preferences:', error);
       // Fallback to localStorage
-      localStorage.setItem('darkMode', JSON.stringify(preferences.darkMode));
       localStorage.setItem('dataSharingConsent', JSON.stringify(preferences.dataSharingConsent));
       localStorage.setItem('personalizationConsent', JSON.stringify(preferences.personalizationConsent));
     }
@@ -95,12 +100,11 @@ const SettingsScreen = ({
   useEffect(() => {
     if (user?.id) {
       savePreferences({
-        darkMode,
         dataSharingConsent,
         personalizationConsent,
       });
     }
-  }, [darkMode, dataSharingConsent, personalizationConsent, user?.id]);
+  }, [theme, dataSharingConsent, personalizationConsent, user?.id]);
 
   const handleDeleteChatHistory = async () => {
     setIsDeletingChatHistory(true);
@@ -171,21 +175,10 @@ const SettingsScreen = ({
                 </Button>
               </div>
 
-              {/* Dark Mode Toggle */}
+              {/* Theme Toggle */}
               <div className="flex items-center justify-between py-3">
-                <span style={{ color: '#EDEDED' }}>Dark Mode</span>
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    darkMode ? 'bg-red-500' : 'bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                      darkMode ? 'translate-x-7' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+                <span className="text-foreground">Theme</span>
+                <ThemeToggle size="sm" />
               </div>
             </div>
           </div>

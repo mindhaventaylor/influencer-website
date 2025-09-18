@@ -75,6 +75,41 @@
   --sidebar-ring: 0 84% 60%;
 }
 
+/* Light theme - Inverted Colors (White becomes Black, Black becomes White) */
+.light {
+  --background: 0 0% 100%;  /* White background */
+  --foreground: 0 0% 0%;     /* Black text */
+  --card: 0 0% 100%;         /* White cards */
+  --card-foreground: 0 0% 0%; /* Black text on cards */
+  --popover: 0 0% 100%;      /* White popovers */
+  --popover-foreground: 0 0% 0%; /* Black text on popovers */
+  --primary: 0 84% 60%;      /* Red buttons (same as dark) */
+  --primary-foreground: 0 0% 100%; /* White text on red buttons */
+  --secondary: 0 0% 96%;     /* Light gray backgrounds */
+  --secondary-foreground: 0 0% 0%; /* Black text on light gray */
+  --muted: 0 0% 96%;         /* Light gray muted areas */
+  --muted-foreground: 0 0% 45%; /* Dark gray muted text */
+  --accent: 0 84% 60%;       /* Red accent (same as dark) */
+  --accent-foreground: 0 0% 100%; /* White text on red accent */
+  --destructive: 0 84% 60%;  /* Red destructive (same as dark) */
+  --border: 0 0% 90%;        /* Light gray borders */
+  --input: 0 0% 96%;         /* Light gray input backgrounds */
+  --ring: 0 84% 60%;         /* Red focus rings (same as dark) */
+  --chart-1: 0 84% 60%;      /* Red chart (same as dark) */
+  --chart-2: 10 70% 50%;     /* Orange chart (same as dark) */
+  --chart-3: 195 70% 70%;    /* Blue chart (same as dark) */
+  --chart-4: 45 90% 50%;     /* Yellow chart (same as dark) */
+  --chart-5: 160 70% 50%;    /* Green chart (same as dark) */
+  --sidebar: 0 0% 100%;      /* White sidebar */
+  --sidebar-foreground: 0 0% 0%; /* Black sidebar text */
+  --sidebar-primary: 0 84% 60%; /* Red sidebar primary (same as dark) */
+  --sidebar-primary-foreground: 0 0% 100%; /* White sidebar primary text */
+  --sidebar-accent: 0 0% 96%; /* Light gray sidebar accent */
+  --sidebar-accent-foreground: 0 0% 0%; /* Black sidebar accent text */
+  --sidebar-border: 0 0% 90%; /* Light gray sidebar border */
+  --sidebar-ring: 0 84% 60%; /* Red sidebar ring (same as dark) */
+}
+
 @layer base {
   html, body {
     height: 100%;
