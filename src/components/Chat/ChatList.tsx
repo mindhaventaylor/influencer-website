@@ -77,41 +77,42 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
 
   if (loading) {
     return (
-      <div className="flex flex-col min-h-screen bg-black text-white">
+      <div className="flex flex-col bg-background text-foreground overflow-y-auto">
         {/* Header Skeleton */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+        <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="w-12 h-12 rounded-full bg-secondary animate-pulse"></div>
             <div>
-              <div className="w-32 h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
-              <div className="w-16 h-4 bg-gray-700 rounded animate-pulse"></div>
+              <div className="w-32 h-6 bg-secondary rounded animate-pulse mb-2"></div>
+              <div className="w-16 h-4 bg-secondary rounded animate-pulse"></div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
-            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="w-12 h-12 rounded-full bg-secondary animate-pulse"></div>
+            <div className="w-12 h-12 rounded-full bg-secondary animate-pulse"></div>
           </div>
         </div>
 
         {/* Main Content Skeleton */}
-        <div className="flex-1 flex flex-col items-center justify-center px-6 space-y-8">
+        <div className="flex flex-col items-center px-6 pt-20 pb-8 space-y-8">
           {/* Large Avatar Skeleton */}
-          <div className="w-48 h-48 rounded-3xl bg-gray-700 animate-pulse"></div>
+          <div className="w-48 h-48 rounded-3xl bg-secondary animate-pulse"></div>
           
           {/* Title and Status Skeleton */}
           <div className="text-center space-y-4">
-            <div className="w-48 h-8 bg-gray-700 rounded animate-pulse mx-auto"></div>
-            <div className="w-32 h-6 bg-gray-700 rounded animate-pulse mx-auto"></div>
+            <div className="w-48 h-8 bg-secondary rounded animate-pulse mx-auto"></div>
+            <div className="w-32 h-6 bg-secondary rounded animate-pulse mx-auto"></div>
           </div>
           
           {/* Start Chat Button Skeleton */}
-          <div className="w-full max-w-xs h-14 bg-gray-700 rounded-2xl animate-pulse"></div>
+          <div className="w-full max-w-xs h-14 bg-secondary rounded-2xl animate-pulse"></div>
 
           {/* Quick Actions Skeleton */}
           <div className="flex space-x-4 w-full max-w-xs">
-            <div className="flex-1 h-12 bg-gray-700 rounded-xl animate-pulse"></div>
-            <div className="flex-1 h-12 bg-gray-700 rounded-xl animate-pulse"></div>
+            <div className="flex-1 h-12 bg-secondary rounded-xl animate-pulse"></div>
+            <div className="flex-1 h-12 bg-secondary rounded-xl animate-pulse"></div>
           </div>
+          <div className="h-40"></div> {/* Extra space for scrolling */}
         </div>
       </div>
     );
@@ -119,10 +120,10 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black text-white">
+      <div className="flex items-center justify-center bg-background text-foreground overflow-y-auto py-20">
         <div className="text-center">
           <p className="text-lg font-semibold mb-2 text-red-400">Error</p>
-          <p className="text-sm text-gray-400">{typeof error === 'string' ? error : error.message || 'An error occurred'}</p>
+          <p className="text-sm text-muted-foreground">{typeof error === 'string' ? error : error.message || 'An error occurred'}</p>
         </div>
       </div>
     );
@@ -130,7 +131,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
   
   if (!influencer) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black text-white">
+      <div className="flex items-center justify-center bg-background text-foreground overflow-y-auto py-20">
         <div className="text-center">
           <p className="text-lg font-semibold">No influencer found</p>
         </div>
@@ -139,9 +140,9 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white">
+    <div className="flex flex-col bg-background text-foreground overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-800">
+      <div className="flex items-center justify-between p-6 border-b border-border">
         <div className="flex items-center space-x-3">
           <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-red-500">
             <img 
@@ -153,7 +154,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">{influencer.display_name || clientInfluencer.displayName}</h1>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-foreground">
               {influencer.is_active ? 'Online' : 'Offline'}
             </p>
           </div>
@@ -161,21 +162,21 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
         <div className="flex items-center space-x-2">
           <button
             onClick={() => { setFeatureMessage('Video calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+            className="p-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
-            <Video className="w-5 h-5 text-gray-400" />
+            <Video className="w-5 h-5 text-muted-foreground" />
           </button>
           <button
             onClick={() => { setFeatureMessage('Voice calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+            className="p-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
-            <Phone className="w-5 h-5 text-gray-400" />
+            <Phone className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 space-y-8">
+      <div className="flex flex-col items-center px-6 pt-20 pb-8 space-y-8">
         <div className="w-48 h-48 rounded-3xl overflow-hidden border-4 border-red-500 shadow-2xl">
           <img 
             src={influencer.avatar_url || clientInfluencer.avatarUrl} 
@@ -187,7 +188,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
         
         <div className="text-center">
           <h2 className="text-3xl font-bold mb-2 text-white">{influencer.display_name || clientInfluencer.displayName}</h2>
-          <p className="text-gray-400 text-lg">
+          <p className="text-muted-foreground text-lg">
             {influencer.is_active ? 'Ready to chat' : 'Currently unavailable'}
           </p>
         </div>
@@ -219,19 +220,20 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
             Settings
           </Button>
         </div>
+        <div className="h-40"></div> {/* Extra space for scrolling */}
       </div>
 
       {/* Feature Modal */}
       {showFeatureModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowFeatureModal(false)} />
-          <div className="relative bg-gray-900 text-white rounded-2xl p-6 max-w-sm mx-4 border border-gray-700">
-            <h3 className="text-lg font-semibold mb-2 text-white">Feature coming soon</h3>
-            <p className="text-sm text-gray-400">{featureMessage}</p>
+          <div className="absolute inset-0 bg-background/60" onClick={() => setShowFeatureModal(false)} />
+          <div className="relative bg-card text-card-foreground rounded-2xl p-6 max-w-sm mx-4 border border-border">
+            <h3 className="text-lg font-semibold mb-2 text-card-foreground">Feature coming soon</h3>
+            <p className="text-sm text-muted-foreground">{featureMessage}</p>
             <div className="mt-4 flex justify-end">
               <button 
                 onClick={() => setShowFeatureModal(false)} 
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium transition-colors"
+                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
               >
                 OK
               </button>

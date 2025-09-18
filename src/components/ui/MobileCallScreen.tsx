@@ -40,7 +40,7 @@ export default function MobileCallScreen({ callType, onEndCall, onResumeChat }: 
           <div className="w-full h-full flex items-center justify-center relative">
             {/* Main video feed */}
             <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-              <div className="text-center">
+              <div className="text-center pt-16">
                 <div className="w-48 h-48 mx-auto mb-6 rounded-full overflow-hidden border-4 border-red-500 shadow-2xl">
                   <img 
                     src={influencer.avatarUrl} 
@@ -65,7 +65,7 @@ export default function MobileCallScreen({ callType, onEndCall, onResumeChat }: 
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <div className="text-center">
+            <div className="text-center pt-16">
               <div className="w-48 h-48 mx-auto mb-8 rounded-full overflow-hidden border-4 border-red-500 shadow-2xl bg-gray-800 flex items-center justify-center">
                 <img 
                   src={influencer.avatarUrl} 

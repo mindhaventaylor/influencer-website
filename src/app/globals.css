@@ -113,15 +113,14 @@
 @layer base {
   html, body {
     height: 100%;
-    overflow: hidden;
-    position: fixed;
+    overflow-y: auto;
     width: 100%;
   }
   
   #root {
     height: 100vh;
     height: var(--app-height);
-    overflow: hidden;
+    overflow-y: auto;
     position: relative;
   }
   

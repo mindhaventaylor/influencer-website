@@ -17,6 +17,8 @@ export default function MobileNavigation({
   onGoToChat
 }: MobileNavigationProps) {
   const [showCallOptions, setShowCallOptions] = useState(false);
+  const [showUnderConstruction, setShowUnderConstruction] = useState(false);
+  const [constructionMessage, setConstructionMessage] = useState('');
 
   const navigationItems = [
     { id: 'ChatList', icon: Home, label: 'Home', key: 'nav-home' },
@@ -36,7 +38,8 @@ export default function MobileNavigation({
             <div className="space-y-4">
               <button
                 onClick={() => {
-                  onCall('voice');
+                  setConstructionMessage('Voice calling is under construction — we\'re working on it!');
+                  setShowUnderConstruction(true);
                   setShowCallOptions(false);
                 }}
                 className="w-full flex items-center justify-center space-x-3 bg-primary text-primary-foreground rounded-xl py-4 px-6 hover:bg-primary/90 transition-colors"
@@ -46,7 +49,8 @@ export default function MobileNavigation({
               </button>
               <button
                 onClick={() => {
-                  onCall('video');
+                  setConstructionMessage('Video calling is under construction — we\'re working on it!');
+                  setShowUnderConstruction(true);
                   setShowCallOptions(false);
                 }}
                 className="w-full flex items-center justify-center space-x-3 bg-primary text-primary-foreground rounded-xl py-4 px-6 hover:bg-primary/90 transition-colors"
@@ -59,6 +63,24 @@ export default function MobileNavigation({
                 className="w-full bg-secondary text-secondary-foreground rounded-xl py-3 px-6 hover:bg-secondary/80 transition-colors"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Under Construction Modal */}
+      {showUnderConstruction && (
+        <div className="fixed inset-0 bg-background/80 z-50 flex items-center justify-center">
+          <div className="relative bg-card text-card-foreground rounded-2xl p-6 max-w-sm mx-4 border border-border">
+            <h3 className="text-lg font-semibold mb-2 text-card-foreground">Under Construction</h3>
+            <p className="text-sm text-muted-foreground mb-4">{constructionMessage}</p>
+            <div className="flex justify-end">
+              <button 
+                onClick={() => setShowUnderConstruction(false)} 
+                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
+              >
+                OK
               </button>
             </div>
           </div>

@@ -42,12 +42,12 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0F0F10' }}>
-      <div className="flex-1 flex flex-col justify-center px-6">
+    <div className="w-full min-h-screen bg-background">
+      <div className="px-6 py-8 mt-20">
         <div className="max-w-md mx-auto lg:max-w-lg xl:max-w-xl w-full">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-medium mb-8" style={{ color: '#EDEDED' }}>
+            <h1 className="text-2xl font-medium mb-8 text-foreground">
               Welcome to Project Taylor
             </h1>
             
@@ -60,11 +60,11 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
               />
             </div>
             
-            <h2 className="text-lg font-semibold mb-8" style={{ color: '#EDEDED' }}>Sign In</h2>
+            <h2 className="text-lg font-semibold mb-8 text-foreground">Sign In</h2>
           </div>
           <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="email" className="block text-xs mb-2" style={{ color: '#B8B8B8' }}>
+            <label htmlFor="email" className="block text-xs mb-2 text-muted-foreground">
               Email
             </label>
             <Input
@@ -74,17 +74,12 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
               required
-              className="w-full h-12 px-4 rounded-2xl border-0 text-white transition-all shadow-inner"
-              style={{ 
-                backgroundColor: '#232325',
-                borderRadius: '20px',
-                boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.3)'
-              }}
+              className="w-full h-12 px-4 rounded-2xl border-0 text-foreground transition-all shadow-inner bg-input"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-xs mb-2" style={{ color: '#B8B8B8' }}>
+            <label htmlFor="password" className="block text-xs mb-2 text-muted-foreground">
               Password
             </label>
             <div className="relative">
@@ -95,18 +90,12 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
-                className="w-full h-12 px-4 pr-12 rounded-2xl border-0 text-white transition-all shadow-inner"
-                style={{ 
-                  backgroundColor: '#232325',
-                  borderRadius: '20px',
-                  boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.3)'
-                }}
+                className="w-full h-12 px-4 pr-12 rounded-2xl border-0 text-foreground transition-all shadow-inner bg-input"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors"
-                style={{ color: '#7C7C81' }}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors text-muted-foreground"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
@@ -117,11 +106,7 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
           <div className="flex gap-3">
             <button
               type="button"
-              className="flex-1 h-11 rounded-2xl border-0 transition-all flex items-center justify-center"
-              style={{ 
-                backgroundColor: '#232325',
-                borderRadius: '20px'
-              }}
+              className="flex-1 h-11 rounded-2xl border-0 transition-all flex items-center justify-center bg-input"
             >
               <svg viewBox="0 0 24 24" className="w-5 h-5">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -132,11 +117,7 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
             </button>
             <button
               type="button"
-              className="flex-1 h-11 rounded-2xl border-0 transition-all flex items-center justify-center"
-              style={{ 
-                backgroundColor: '#232325',
-                borderRadius: '20px'
-              }}
+              className="flex-1 h-11 rounded-2xl border-0 transition-all flex items-center justify-center bg-input"
             >
               <svg viewBox="0 0 24 24" className="w-5 h-5">
                 <path fill="#FFFFFF" d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
@@ -153,17 +134,11 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
           <Button
             type="submit"
             disabled={loading}
-            className="w-full h-12 rounded-3xl border-0 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            style={{ 
-              backgroundColor: '#2C2C2E',
-              borderRadius: '24px',
-              color: '#EDEDED',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
-            }}
+            className="w-full h-12 rounded-3xl border-0 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 bg-primary text-primary-foreground"
           >
             {loading ? (
               <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
                 Signing in...
               </div>
             ) : (
@@ -172,20 +147,20 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
           </Button>
 
           <div className="mt-8 text-center">
-            <p className="text-sm mb-2" style={{ color: '#A6A6AA' }}>
+            <p className="text-sm mb-2 text-muted-foreground">
               Don't Have an Account?{' '}
               <button
                 onClick={onSwitchToSignUp}
-                className="font-medium transition-colors"
-                style={{ color: '#E84A4A' }}
+                className="font-medium transition-colors text-destructive"
               >
                 Sign Up
               </button>
             </p>
-            <p className="text-xs" style={{ color: '#8A8A8F' }}>Must be 18+</p>
+            <p className="text-xs text-muted-foreground">Must be 18+</p>
           </div>
         </form>
         </div>
+        <div className="h-60"></div> {/* Extra space for scrolling */}
       </div>
     </div>
   );
