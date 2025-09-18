@@ -102,5 +102,8 @@
     "tailwindcss": "^3.4.15",
     "typescript": "^5"
   },
-  "description": "Chat with teste - AI-powered conversations"
+  "description": "Chat with teste - AI-powered conversations",
+  "engines": {
+    "node": ">=18.17"
+  }
 }
