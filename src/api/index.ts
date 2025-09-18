@@ -1,6 +1,6 @@
-import { supabase } from '../lib/supabaseClient';
-import { getUserFriendlyError } from '../lib/errorMessages';
-import { createUserFriendlyError } from '../lib/userFriendlyError';
+import { supabase } from '@/lib/supabaseClient';
+import { getUserFriendlyError } from '@/lib/errorMessages';
+import { createUserFriendlyError } from '@/lib/userFriendlyError';
 
 interface UserData {
   email: string;

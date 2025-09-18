@@ -18,6 +18,7 @@ import { supabase } from '@/lib/supabaseClient';
 import api from '@/api';
 import { handleAuthError } from '@/lib/authErrorHandler';
 import { logError, logSuccess } from '@/lib/errorLogger';
+import { getInfluencerDatabaseId } from '@/lib/config';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 
 interface User {
@@ -263,7 +264,6 @@ export default function Home() {
     
     // Get influencer ID from config for instant access
     try {
-      const { getInfluencerDatabaseId } = require('@/lib/config');
       const configInfluencerId = getInfluencerDatabaseId();
       
       if (configInfluencerId) {

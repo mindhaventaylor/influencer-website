@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
-import api from '../../api';
+import api from '@/api';
 import { getInfluencerInfo } from '@/lib/config';
-import { getUserFriendlyError } from '../../lib/errorMessages';
+import { getUserFriendlyError } from '@/lib/errorMessages';
 
 interface SignInProps {
   onSignInSuccess: (user: { id: string; email: string; token: string }) => void;

@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
-import api from '../../api';
-import { getUserFriendlyError } from '../../lib/errorMessages';
+import api from '@/api';
+import { getUserFriendlyError } from '@/lib/errorMessages';
 
 const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
   const [email, setEmail] = useState('');
