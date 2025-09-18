@@ -63,7 +63,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
       <div className="flex items-center justify-center min-h-screen bg-black text-white">
         <div className="text-center">
           <p className="text-lg font-semibold mb-2 text-red-400">Error</p>
-          <p className="text-sm text-gray-400">{error}</p>
+          <p className="text-sm text-gray-400">{typeof error === 'string' ? error : error.message || 'An error occurred'}</p>
         </div>
       </div>
     );

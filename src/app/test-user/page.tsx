@@ -93,7 +93,7 @@ export default function TestUserPage() {
 
             {error && (
               <div className="text-red-500 text-sm bg-red-500/10 p-3 rounded">
-                {error}
+                {typeof error === 'string' ? error : error.message || 'An error occurred'}
               </div>
             )}
 

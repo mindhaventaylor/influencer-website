@@ -192,7 +192,7 @@ export function PurchaseButton({
 
         {error && (
           <div className="text-red-500 text-sm text-center bg-red-500/10 p-2 rounded">
-            {error}
+            {typeof error === 'string' ? error : error.message || 'An error occurred'}
           </div>
         )}
 
