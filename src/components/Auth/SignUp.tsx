@@ -141,9 +141,9 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0F0F10' }}>
+    <div className="h-screen flex flex-col" style={{ backgroundColor: '#0F0F10' }}>
       {/* Top Bar */}
-      <div className="flex items-center px-6 py-4" style={{ backgroundColor: '#1B1B1D' }}>
+      <div className="flex items-center px-6 py-4 flex-shrink-0" style={{ backgroundColor: '#1B1B1D' }}>
         <Button 
           variant="ghost" 
           onClick={onGoBack} 
@@ -155,7 +155,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
         <h1 className="text-lg font-medium ml-4" style={{ color: '#EDEDED' }}>Create Account</h1>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center px-6 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-6 py-8" style={{ maxHeight: 'calc(100vh - 80px)' }}>
         <div className="max-w-md mx-auto lg:max-w-lg xl:max-w-xl w-full">
           {/* Hero Section */}
           <div className="text-center mb-8">
@@ -219,47 +219,45 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
 
             <div>
               <label className="block text-xs mb-2" style={{ color: '#B8B8B8' }}>Password</label>
-              <div className="relative">
+              <div className="space-y-3">
+                <div className="relative">
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full h-10 px-4 pr-12 rounded-2xl border-0 text-white transition-all shadow-inner"
+                    style={{ 
+                      backgroundColor: '#232325',
+                      borderRadius: '20px',
+                      boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.3)'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors"
+                    style={{ color: '#7C7C81' }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 <Input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-12 px-4 pr-12 rounded-2xl border-0 text-white transition-all shadow-inner"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full h-10 px-4 rounded-2xl border-0 text-white transition-all shadow-inner"
                   style={{ 
                     backgroundColor: '#232325',
                     borderRadius: '20px',
                     boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.3)'
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors"
-                  style={{ color: '#7C7C81' }}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-red-400 text-sm mt-1">Passwords do not match</p>
+                )}
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs mb-2" style={{ color: '#B8B8B8' }}>Confirm your password</label>
-              <Input
-                type="password"
-                placeholder="Confirm your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full h-12 px-4 rounded-2xl border-0 text-white transition-all shadow-inner"
-                style={{ 
-                  backgroundColor: '#232325',
-                  borderRadius: '20px',
-                  boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.3)'
-                }}
-              />
-              {confirmPassword && password !== confirmPassword && (
-                <p className="text-red-400 text-sm mt-1">Passwords do not match</p>
-              )}
             </div>
 
             <div>
@@ -282,7 +280,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                   }}
                 />
                 {showDatePicker && (
-                  <div className="absolute left-0 mt-2 z-50 w-full rounded-xl p-4 shadow-xl" style={{ backgroundColor: '#232325' }}>
+                  <div className="absolute left-0 mt-2 z-50 w-full rounded-xl p-4 shadow-xl" style={{ backgroundColor: '#232325', maxHeight: '300px', overflowY: 'auto' }}>
                     <DatePickerPopup
                       month={pickerMonth}
                       day={pickerDay}
