@@ -46,10 +46,10 @@ export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenPro
       });
 
       if (response.ok) {
-        // Account deletion successful
-        alert('Your account has been deleted successfully.');
-        // Redirect to sign out or home page
-        window.location.href = '/';
+        // Account deletion successful - redirect to home page with a small delay
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1000);
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to delete account');
@@ -62,9 +62,9 @@ export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenPro
   };
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#0F0F10' }}>
+    <div className="flex flex-col h-screen" style={{ backgroundColor: '#0F0F10' }}>
       {/* Top Navigation */}
-      <div className="flex items-center px-6 py-4" style={{ backgroundColor: '#1B1B1D' }}>
+      <div className="flex items-center px-6 py-4 flex-shrink-0" style={{ backgroundColor: '#1B1B1D' }}>
         <Button 
           variant="ghost" 
           onClick={onGoBack} 
@@ -76,8 +76,8 @@ export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenPro
         <h1 className="text-lg font-medium ml-4" style={{ color: '#EDEDED' }}>Delete Account</h1>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
+      {/* Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto px-6 py-8 pb-24">
         <div className="max-w-md mx-auto lg:max-w-lg xl:max-w-xl w-full">
           {/* Section Title */}
           <h2 className="text-sm font-semibold mb-6" style={{ color: '#EDEDED' }}>

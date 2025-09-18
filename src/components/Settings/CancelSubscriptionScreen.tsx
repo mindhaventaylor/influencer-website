@@ -61,9 +61,9 @@ export default function CancelSubscriptionScreen({ onGoBack }: CancelSubscriptio
   };
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#0F0F10' }}>
+    <div className="flex flex-col h-screen" style={{ backgroundColor: '#0F0F10' }}>
       {/* Top Navigation */}
-      <div className="flex items-center px-6 py-4" style={{ backgroundColor: '#1B1B1D' }}>
+      <div className="flex items-center px-6 py-4 flex-shrink-0" style={{ backgroundColor: '#1B1B1D' }}>
         <Button 
           variant="ghost" 
           onClick={onGoBack} 
@@ -75,8 +75,8 @@ export default function CancelSubscriptionScreen({ onGoBack }: CancelSubscriptio
         <h1 className="text-lg font-medium ml-4" style={{ color: '#EDEDED' }}>Cancel Subscription</h1>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
+      {/* Content - Scrollable */}
+      <div className="flex-1 overflow-y-auto px-6 py-8 pb-24">
         <div className="max-w-md mx-auto lg:max-w-lg xl:max-w-xl w-full">
           {/* Section Header */}
           <h2 className="text-lg font-semibold mb-6" style={{ color: '#EDEDED' }}>
