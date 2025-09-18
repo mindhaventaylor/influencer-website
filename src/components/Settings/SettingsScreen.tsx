@@ -187,7 +187,7 @@ const SettingsScreen = ({
                 className="flex items-center justify-between py-3 w-full hover:bg-secondary rounded-xl transition-colors"
               >
                 <span className="text-foreground">Contact Us</span>
-                <ExternalLink className="w-5 h-5" text-muted-foreground />
+                <ExternalLink className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
           </div>

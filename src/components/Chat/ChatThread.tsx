@@ -465,24 +465,29 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
               .filter((message, index, array) => 
                 array.findIndex(m => m.id === message.id) === index
               )
-              .map((message) => (
-              message.content && message.content.trim() && (
-                <div
-                  key={message.id}
-                  className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+              .map((message, index, array) => {
+                // Check if this message is from a different user than the previous one
+                const previousMessage = array[index - 1];
+                const isDifferentUser = previousMessage && previousMessage.sender !== message.sender;
+                
+                return message.content && message.content.trim() && (
                   <div
-                    className={`p-4 rounded-2xl max-w-xs lg:max-w-md ${
-                      message.sender === 'user'
-                        ? 'bg-red-600 text-white'
-                        : 'bg-gray-800 text-white'
-                    }`}
+                    key={message.id}
+                    className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'} ${isDifferentUser ? 'mb-2' : ''}`}
                   >
-                    <MessageFormatter content={message.content} />
+                    <div
+                      className={`p-4 rounded-2xl max-w-xs lg:max-w-md ${
+                        message.sender === 'user'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-800 text-white'
+                      }`}
+                    >
+                      <MessageFormatter content={message.content} />
+                    </div>
                   </div>
-                </div>
-              )
-            ))}
+                );
+              })
+            }
           </>
         )}
         {isAiReplying && (
@@ -597,9 +602,9 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
       {showProfileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-background/80" onClick={() => setShowProfileModal(false)} />
-          <div className="relative bg-card text-card-foreground rounded-2xl p-6 max-w-sm mx-4 border border-border">
+          <div className="relative bg-card text-card-foreground rounded-2xl p-6 max-w-lg mx-4 border border-border">
             <div className="text-center">
-              <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-red-500 mx-auto mb-4">
+              <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-red-500 mx-auto mb-4">
                 <img 
                   src={influencer?.avatar_url || clientInfluencer.avatarUrl} 
                   alt={influencer?.display_name || clientInfluencer.displayName} 

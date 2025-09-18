@@ -134,7 +134,12 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
           <Button
             type="submit"
             disabled={loading}
-            className="w-full h-12 rounded-3xl border-0 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 bg-primary text-primary-foreground"
+            className="w-full h-12 rounded-3xl border-0 font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 bg-secondary text-secondary-foreground"
+            style={{ 
+              boxShadow: '0 0 20px rgba(255, 255, 255, 0.1)',
+              backgroundColor: 'hsl(0 0% 20%)',
+              color: 'hsl(0 0% 100%)'
+            }}
           >
             {loading ? (
               <div className="flex items-center justify-center">
