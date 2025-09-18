@@ -86,14 +86,14 @@ export const ChatCache = {
     return messagesByThreadId.get(key) || null;
   },
 
-  async getThread(influencerId: string, userId: string): Promise<Message[]> {
+  async getThread(influencerId: string, userId: string, limit = 10): Promise<Message[]> {
     const key = makeThreadKey(influencerId, userId);
     if (messagesByThreadId.has(key)) {
       return messagesByThreadId.get(key)!;
     }
     if (!messagesPromises.has(key)) {
       const p = api
-        .getChatThread(influencerId, userId)
+        .getChatThread(influencerId, userId, limit, 0) // 🚀 OPTIMIZATION: Load fewer messages initially
         .then(async ({ data, error }) => {
           if (error) {
             console.error('Error fetching chat thread:', error);
@@ -101,8 +101,11 @@ export const ChatCache = {
           }
           const msgs = data || [];
           
+          // 🚀 FIX: Reverse messages for display (newest at bottom)
+          const reversedMsgs = msgs.reverse();
+          
           // If no messages exist, initialize conversation
-          if (msgs.length === 0) {
+          if (reversedMsgs.length === 0) {
             try {
               console.log('No messages found, initializing conversation...');
               await api.initializeConversation(influencerId);
@@ -113,8 +116,8 @@ export const ChatCache = {
             }
           }
           
-          messagesByThreadId.set(key, msgs);
-          return msgs;
+          messagesByThreadId.set(key, reversedMsgs);
+          return reversedMsgs;
         })
         .catch((error) => {
           console.error('ChatCache getThread error:', error);
@@ -129,6 +132,42 @@ export const ChatCache = {
       messagesPromises.set(key, p);
     }
     return messagesPromises.get(key)!;
+  },
+
+  // 🚀 OPTIMIZATION: Method to load more OLDER messages for pagination
+  async loadMoreMessages(influencerId: string, userId: string, limit = 5): Promise<Message[]> {
+    const key = makeThreadKey(influencerId, userId);
+    const existingMessages = messagesByThreadId.get(key) || [];
+    
+    // Calculate offset based on existing messages count
+    const offset = existingMessages.length;
+    
+    try {
+      const { data, error } = await api.getChatThread(influencerId, userId, limit, offset);
+      if (error) {
+        console.error('Error loading more messages:', error);
+        return [];
+      }
+      
+      const newMessages = data || [];
+      
+      // 🚀 FIX: Reverse new messages and prepend to existing (older messages go at the top)
+      const reversedNewMessages = newMessages.reverse();
+      const allMessages = [...reversedNewMessages, ...existingMessages];
+      
+      messagesByThreadId.set(key, allMessages);
+      
+      // Notify subscribers
+      const subscribers = listenersByThreadId.get(key);
+      if (subscribers) {
+        subscribers.forEach(callback => callback(allMessages));
+      }
+      
+      return reversedNewMessages;
+    } catch (error) {
+      console.error('Error loading more messages:', error);
+      return [];
+    }
   },
 
   subscribeThread(influencerId: string, userId: string, callback: (messages: Message[]) => void): () => void {
@@ -148,9 +187,14 @@ export const ChatCache = {
   appendToThread(influencerId: string, userId: string, messageOrMessages: Message | Message[]): Message[] {
     const key = makeThreadKey(influencerId, userId);
     const current = messagesByThreadId.get(key) || [];
-    const next = Array.isArray(messageOrMessages)
-      ? [...current, ...messageOrMessages]
-      : [...current, messageOrMessages];
+    
+    // 🚀 FIX: Prevent duplicate messages by filtering out existing IDs
+    const messagesToAdd = Array.isArray(messageOrMessages) ? messageOrMessages : [messageOrMessages];
+    const newMessages = messagesToAdd.filter(newMsg => 
+      !current.some(existingMsg => existingMsg.id === newMsg.id)
+    );
+    
+    const next = [...current, ...newMessages];
     messagesByThreadId.set(key, next);
     notifyThread(key);
     return next;
@@ -159,8 +203,16 @@ export const ChatCache = {
   replaceOptimistic(influencerId: string, userId: string, tempId: string, userMessage: Message, aiMessage: Message): Message[] {
     const key = makeThreadKey(influencerId, userId);
     const current = messagesByThreadId.get(key) || [];
+    
+    // 🚀 FIX: Remove temp message and prevent duplicates
     const filtered = current.filter((m) => m.id !== tempId);
-    const next = [...filtered, userMessage, aiMessage];
+    
+    // Check if messages already exist to prevent duplicates
+    const messagesToAdd = [userMessage, aiMessage].filter(newMsg => 
+      !filtered.some(existingMsg => existingMsg.id === newMsg.id)
+    );
+    
+    const next = [...filtered, ...messagesToAdd];
     messagesByThreadId.set(key, next);
     notifyThread(key);
     return next;

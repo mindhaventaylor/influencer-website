@@ -6,6 +6,7 @@ import MessageFormatter from '@/components/ui/MessageFormatter';
 import ChatCache from '@/lib/chatCache';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import { logError } from '@/lib/errorLogger';
+import { InfluencerCache } from '@/lib/influencerCache';
 import { toast } from 'sonner';
 import { getClientInfluencerInfo } from '@/lib/clientConfig';
 
@@ -22,6 +23,8 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [isAiReplying, setIsAiReplying] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [featureMessage, setFeatureMessage] = useState('');
@@ -48,28 +51,52 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
       try {
         setLoading(true);
         
-        // Get influencer via API (uses database UUID)
-        const influencerResponse = await fetch('/api/influencer/current');
-        const influencerIdResponse = await fetch('/api/influencer/id');
+        // 🚀 OPTIMIZATION: Check cache first for influencer data
+        let influencerData, influencerIdData;
+        const cachedData = InfluencerCache.get();
         
-        if (influencerResponse.ok && influencerIdResponse.ok) {
-          const influencerData = await influencerResponse.json();
-          const influencerIdData = await influencerIdResponse.json();
+        if (cachedData) {
+          console.log('🚀 Using cached influencer data');
+          influencerData = cachedData.influencer;
+          influencerIdData = cachedData.influencerId;
           
           if (mounted) setInfluencer(influencerData);
+        } else {
+          // 🚀 OPTIMIZATION: Use combined endpoint to get both influencer data and ID in one request
+          const combinedResponse = await fetch('/api/influencer/combined');
           
+          if (combinedResponse.ok) {
+            const responseData = await combinedResponse.json();
+            influencerData = responseData.influencer;
+            influencerIdData = responseData.influencerId;
+            
+            // Cache the data for future use
+            InfluencerCache.set(influencerData, influencerIdData);
+            
+            if (mounted) setInfluencer(influencerData);
+          }
+        }
+        
+        if (influencerData && influencerIdData) {
           // Use the resolved influencer ID (database UUID) for chat messages
           // If no influencerId was passed, use the current influencer
           const resolvedInfluencerId = influencerId || influencerIdData.id;
           
-          // messages: use cache first
+          // 🚀 OPTIMIZATION: Check cache first and show immediately if available
           const cachedMsgs = ChatCache.peekThread(resolvedInfluencerId, userId);
-          if (cachedMsgs) {
-            if (mounted) setMessages(cachedMsgs);
+          if (cachedMsgs && cachedMsgs.length > 0) {
+            if (mounted) {
+              setMessages(cachedMsgs);
+              setLoading(false); // Stop loading immediately for cached data
+            }
+          }
+          
+          // Fetch fresh messages in background
+          const msgs = await ChatCache.getThread(resolvedInfluencerId, userId);
+          if (mounted) {
+            setMessages(msgs);
             setLoading(false);
           }
-          const msgs = await ChatCache.getThread(resolvedInfluencerId, userId);
-          if (mounted) setMessages(msgs);
         }
       } catch (err) {
         if (mounted) {
@@ -88,14 +115,30 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
     // We'll set up the subscription after we get the resolved influencer ID
     let unsubscribe: (() => void) | null = null;
     
+    // 🚀 OPTIMIZATION: Setup subscription with cached influencer ID if available
     const setupSubscription = async () => {
-      const influencerIdResponse = await fetch('/api/influencer/id');
-      if (influencerIdResponse.ok) {
-        const influencerIdData = await influencerIdResponse.json();
-        const resolvedInfluencerId = influencerIdData.id;
-        unsubscribe = ChatCache.subscribeThread(resolvedInfluencerId, userId, (msgs) => {
-          if (mounted) setMessages(msgs);
-        });
+      try {
+        // Use influencerId if already available, otherwise fetch it
+        let resolvedInfluencerId = influencerId;
+        
+        if (!resolvedInfluencerId) {
+          const influencerIdResponse = await fetch('/api/influencer/id');
+          if (influencerIdResponse.ok) {
+            const influencerIdData = await influencerIdResponse.json();
+            resolvedInfluencerId = influencerIdData.id;
+          }
+        }
+        
+        if (resolvedInfluencerId) {
+          unsubscribe = ChatCache.subscribeThread(resolvedInfluencerId, userId, (msgs) => {
+            if (mounted) {
+              console.log('🔄 Received cache update:', msgs.length, 'messages');
+              setMessages(msgs);
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to setup subscription:', error);
       }
     };
     
@@ -139,8 +182,25 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
     const resolvedInfluencerId = influencerIdData.id;
 
     const tempId = Date.now();
-    const optimisticUserMessage = { id: tempId, sender: 'user', content: userMessageContent, created_at: new Date().toISOString() };
+    const optimisticUserMessage = { 
+      id: tempId, 
+      sender: 'user', 
+      content: userMessageContent, 
+      created_at: new Date().toISOString(),
+      is_temp: true // Mark as temporary for identification
+    };
+    
+    // 🚀 OPTIMISTIC UPDATE: Show user message immediately
+    console.log('🚀 Adding optimistic user message:', optimisticUserMessage);
     ChatCache.appendToThread(resolvedInfluencerId, userId, optimisticUserMessage);
+    
+    // Also update local state immediately for instant UI update
+    // 🚀 FIX: Prevent duplicates by checking if message already exists
+    setMessages(prev => {
+      const exists = prev.some(msg => msg.id === optimisticUserMessage.id);
+      return exists ? prev : [...prev, optimisticUserMessage];
+    });
+    
     setIsAiReplying(true);
 
     try {
@@ -157,7 +217,11 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
     } catch (err) {
       const userFriendlyError = getUserFriendlyError(err);
       logError('Failed to send message (fast mode)', err);
+      
+      // 🚀 OPTIMISTIC UPDATE: Remove failed message from both cache and local state
+      console.log('🚀 Removing failed optimistic message:', tempId);
       ChatCache.removeMessageById(resolvedInfluencerId, userId, tempId);
+      setMessages(prev => prev.filter(msg => msg.id !== tempId));
       
       // Debug: Log error structure to help troubleshoot
       console.log('🔍 Error structure:', {
@@ -181,12 +245,101 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
     }
   };
 
+  // 🚀 OPTIMIZATION: Load more messages for pagination
+  const handleLoadMore = async () => {
+    if (!influencer || !userId || loadingMore) return;
+    
+    try {
+      setLoadingMore(true);
+      const newMessages = await ChatCache.loadMoreMessages(influencer.id, userId, 5);
+      
+      if (newMessages.length < 5) {
+        setHasMoreMessages(false);
+      }
+      
+      // Update messages state
+      setMessages(prev => [...newMessages, ...prev]);
+    } catch (error) {
+      console.error('Error loading more messages:', error);
+      toast.error('Failed to load more messages');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black text-white">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading chat...</p>
+      <div className="flex flex-col h-screen bg-black text-white">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-800 flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={onGoBack}
+              className="p-2 rounded-full hover:bg-gray-800 transition-colors"
+            >
+              <ChevronLeft className="h-6 w-6 text-white" />
+            </button>
+            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
+            <div>
+              <div className="w-24 h-5 bg-gray-700 rounded animate-pulse mb-2"></div>
+              <div className="w-16 h-4 bg-gray-700 rounded animate-pulse"></div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
+          </div>
+        </div>
+        
+        {/* Messages Skeleton */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {/* AI Message Skeleton */}
+          <div className="flex items-start space-x-3">
+            <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="flex-1">
+              <div className="bg-gray-800 rounded-2xl p-4 max-w-xs">
+                <div className="space-y-2">
+                  <div className="w-full h-4 bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-3/4 h-4 bg-gray-700 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* User Message Skeleton */}
+          <div className="flex items-start space-x-3 justify-end">
+            <div className="flex-1 max-w-xs">
+              <div className="bg-red-600 rounded-2xl p-4 ml-auto">
+                <div className="space-y-2">
+                  <div className="w-full h-4 bg-red-500 rounded animate-pulse"></div>
+                  <div className="w-2/3 h-4 bg-red-500 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+          </div>
+          
+          {/* AI Message Skeleton */}
+          <div className="flex items-start space-x-3">
+            <div className="w-8 h-8 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="flex-1">
+              <div className="bg-gray-800 rounded-2xl p-4 max-w-sm">
+                <div className="space-y-2">
+                  <div className="w-full h-4 bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-4/5 h-4 bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-1/2 h-4 bg-gray-700 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Input Skeleton */}
+        <div className="p-6 border-t border-gray-800">
+          <div className="flex items-center space-x-3">
+            <div className="flex-1 h-12 bg-gray-700 rounded-full animate-pulse"></div>
+            <div className="w-12 h-12 bg-gray-700 rounded-full animate-pulse"></div>
+          </div>
         </div>
       </div>
     );
@@ -260,16 +413,42 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
           </div>
         ) : (
           <>
-            {messages.flatMap((message) => {
-              if (message.content && message.content.includes('\n')) {
-                return message.content.split('\n').map((line, index) => ({
-                  ...message,
-                  id: `${message.id}-${index}`,
-                  content: line,
-                }));
-              }
-              return message;
-            }).map((message) => (
+            {/* 🚀 OPTIMIZATION: Load More Messages Button */}
+            {hasMoreMessages && messages.length > 0 && (
+              <div className="flex justify-center py-4">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-sm text-gray-300 transition-colors"
+                >
+                  {loadingMore ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Loading...</span>
+                    </div>
+                  ) : (
+                    'Load More Messages'
+                  )}
+                </button>
+              </div>
+            )}
+            
+            {messages
+              .flatMap((message) => {
+                if (message.content && message.content.includes('\n')) {
+                  return message.content.split('\n').map((line, index) => ({
+                    ...message,
+                    id: `${message.id}-${index}`,
+                    content: line,
+                  }));
+                }
+                return message;
+              })
+              // 🚀 FIX: Remove duplicate messages based on unique ID
+              .filter((message, index, array) => 
+                array.findIndex(m => m.id === message.id) === index
+              )
+              .map((message) => (
               message.content && message.content.trim() && (
                 <div
                   key={message.id}

@@ -43,16 +43,6 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0F0F10' }}>
-      {/* Status Bar */}
-      <div className="flex justify-between items-center px-6 py-3" style={{ backgroundColor: '#1B1B1D', height: '88px' }}>
-        <span className="text-sm font-medium" style={{ color: '#EDEDED' }}>9:41</span>
-        <div className="flex items-center space-x-1">
-          <div className="w-4 h-2 rounded-sm" style={{ backgroundColor: '#EDEDED' }}></div>
-          <div className="w-4 h-2 rounded-sm" style={{ backgroundColor: '#EDEDED' }}></div>
-          <div className="w-4 h-2 rounded-sm" style={{ backgroundColor: '#EDEDED' }}></div>
-        </div>
-      </div>
-
       <div className="flex-1 flex flex-col justify-center px-6">
         <div className="max-w-md mx-auto lg:max-w-lg xl:max-w-xl w-full">
           {/* Header */}

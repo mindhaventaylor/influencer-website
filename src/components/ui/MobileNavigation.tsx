@@ -21,6 +21,7 @@ export default function MobileNavigation({
   const navigationItems = [
     { id: 'ChatList', icon: Home, label: 'Home', key: 'nav-home' },
     { id: 'ChatThread', icon: MessageCircle, label: 'Chat', key: 'nav-chat', onClick: onGoToChat },
+    { id: 'Call', icon: Phone, label: 'Call', key: 'nav-call', onClick: () => setShowCallOptions(true) },
     { id: 'ProfileScreen', icon: User, label: 'Profile', key: 'nav-profile' },
     { id: 'SettingsScreen', icon: Settings, label: 'Settings', key: 'nav-settings' },
   ];
@@ -86,15 +87,6 @@ export default function MobileNavigation({
               </button>
             );
           })}
-          
-          {/* Call Button */}
-          <button
-            onClick={() => setShowCallOptions(true)}
-            className="flex flex-col items-center justify-center py-2 px-3 rounded-lg text-primary hover:text-primary/80 transition-colors"
-          >
-            <Phone className="w-6 h-6" />
-            <span className="text-xs mt-1 font-medium">Call</span>
-          </button>
         </div>
       </div>
     </>

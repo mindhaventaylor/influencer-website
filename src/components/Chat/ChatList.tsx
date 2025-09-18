@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Video, Phone, MessageCircle, Settings, User } from 'lucide-react';
 import { getClientInfluencerInfo } from '@/lib/clientConfig';
+import { InfluencerCache } from '@/lib/influencerCache';
 
 interface ChatListProps {
   onViewChat: (influencerId: string) => void;
@@ -24,15 +25,42 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
       try {
         setLoading(true);
         
-        // Get current influencer via API
-        const response = await fetch('/api/influencer/current');
-        if (!response.ok) {
-          throw new Error('Failed to fetch influencer');
+        // 🚀 OPTIMIZATION: Check cache first for instant loading
+        const cachedData = InfluencerCache.get();
+        if (cachedData) {
+          console.log('🚀 Using cached influencer data for ChatList');
+          if (mounted) {
+            setInfluencer(cachedData.influencer);
+            setLoading(false); // Stop loading immediately for cached data
+          }
+        } else {
+          // 🚀 OPTIMIZATION: Show client config data immediately as fallback
+          if (mounted) {
+            setInfluencer({
+              id: clientInfluencer.id,
+              display_name: clientInfluencer.displayName,
+              avatar_url: clientInfluencer.avatarUrl,
+              bio: clientInfluencer.bio,
+              is_active: true
+            });
+            setLoading(false); // Stop loading to show fallback data
+          }
         }
-        const currentInfluencer = await response.json();
         
-        if (mounted) {
-          setInfluencer(currentInfluencer);
+        // Fetch fresh data in background
+        try {
+          const response = await fetch('/api/influencer/current');
+          if (response.ok) {
+            const currentInfluencer = await response.json();
+            if (mounted) {
+              setInfluencer(currentInfluencer);
+              // Cache the fresh data
+              InfluencerCache.set(currentInfluencer, { id: currentInfluencer.id });
+            }
+          }
+        } catch (fetchError) {
+          console.warn('Failed to fetch fresh influencer data:', fetchError);
+          // Keep using cached or fallback data
         }
       } catch (err) {
         if (mounted) setError(err instanceof Error ? err.message : 'Unknown error');
@@ -49,10 +77,41 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black text-white">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+      <div className="flex flex-col min-h-screen bg-black text-white">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-800">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
+            <div>
+              <div className="w-32 h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
+              <div className="w-16 h-4 bg-gray-700 rounded animate-pulse"></div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
+            <div className="w-12 h-12 rounded-full bg-gray-700 animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6 space-y-8">
+          {/* Large Avatar Skeleton */}
+          <div className="w-48 h-48 rounded-3xl bg-gray-700 animate-pulse"></div>
+          
+          {/* Title and Status Skeleton */}
+          <div className="text-center space-y-4">
+            <div className="w-48 h-8 bg-gray-700 rounded animate-pulse mx-auto"></div>
+            <div className="w-32 h-6 bg-gray-700 rounded animate-pulse mx-auto"></div>
+          </div>
+          
+          {/* Start Chat Button Skeleton */}
+          <div className="w-full max-w-xs h-14 bg-gray-700 rounded-2xl animate-pulse"></div>
+
+          {/* Quick Actions Skeleton */}
+          <div className="flex space-x-4 w-full max-w-xs">
+            <div className="flex-1 h-12 bg-gray-700 rounded-xl animate-pulse"></div>
+            <div className="flex-1 h-12 bg-gray-700 rounded-xl animate-pulse"></div>
+          </div>
         </div>
       </div>
     );
@@ -89,6 +148,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
               src={influencer.avatar_url || clientInfluencer.avatarUrl} 
               alt={influencer.display_name || clientInfluencer.displayName}
               className="w-full h-full object-cover"
+              loading="lazy"
             />
           </div>
           <div>
@@ -121,6 +181,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
             src={influencer.avatar_url || clientInfluencer.avatarUrl} 
             alt={influencer.display_name || clientInfluencer.displayName}
             className="w-full h-full object-cover"
+            loading="lazy"
           />
         </div>
         

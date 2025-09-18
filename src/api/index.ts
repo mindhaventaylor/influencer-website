@@ -81,13 +81,13 @@ const api = {
       .single();
   },
 
-  async getChatThread(influencerId: string, userId: string, limit = 20, offset = 0) {
+  async getChatThread(influencerId: string, userId: string, limit = 10, offset = 0) {
     return supabase
       .from('chat_messages')
       .select('*')
       .eq('influencer_id', influencerId)
       .eq('user_id', userId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false }) // 🚀 FIX: Show newest messages first
       .range(offset, offset + limit - 1);
   },
 
