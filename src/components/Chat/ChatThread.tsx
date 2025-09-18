@@ -527,7 +527,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                   handleSendMessage();
                 }
               }}
-              className="flex-1 p-4 rounded-2xl bg-input border border-border text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+              className="flex-1 p-4 rounded-2xl bg-input border border-border text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base md:text-sm"
             />
             <button 
               onClick={handleSendMessage} 

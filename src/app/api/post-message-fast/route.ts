@@ -34,7 +34,23 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
   // Use DB count if available, otherwise fallback to computed length
   const msgsCntByUser = typeof userMsgCount === 'number' ? userMsgCount : chatHistory.filter((m: any) => m[0] === 'user').length;
 
+  // NEW: total message count for the whole conversation
+  const { count: totalMsgCount, error: totalCntError } = await supabaseService
+    .from('chat_messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('conversation_id', conversationId);
+
+  if (totalCntError) {
+    console.error('Failed to count total messages, falling back:', totalCntError);
+  }
+
+  // +1 to include this new user message that's about to be added
+  const msgsCntTotal = typeof totalMsgCount === 'number'
+    ? totalMsgCount + 1
+    : chatHistory.length + 1;
+
   console.info('msgs_cnt_by_user ->', msgsCntByUser);
+  console.info('msgs_cnt_total ->', msgsCntTotal);
   console.info('conversation_id used for count ->', conversationId);
 
   // Use the personality prompt from the database (passed from the main function)
@@ -47,6 +63,7 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
     influencer_personality_prompt: personalityPrompt,
     chat_history: chatHistory,
     msgs_cnt_by_user: msgsCntByUser,
+    msgs_cnt_total: msgsCntTotal, // NEW
   };
 
   // Log the request being sent to AI for debugging
@@ -197,8 +214,7 @@ export async function POST(request: NextRequest) {
       .select('sender, content')
       .eq('user_id', userId)
       .eq('influencer_id', influencerId)
-      .order('created_at', { ascending: false })
-      .limit(20); // Get last 20 messages, then we'll take the last ones in the function
+      .order('created_at', { ascending: false }); // Get last 20 messages, then we'll take the last ones in the function
 
     if (priorMessagesError) {
       console.error('Error fetching prior messages:', priorMessagesError);
