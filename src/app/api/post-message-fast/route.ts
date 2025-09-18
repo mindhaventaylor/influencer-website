@@ -35,6 +35,7 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
   const msgsCntByUser = typeof userMsgCount === 'number' ? userMsgCount : chatHistory.filter((m: any) => m[0] === 'user').length;
 
   console.info('msgs_cnt_by_user ->', msgsCntByUser);
+  console.info('conversation_id used for count ->', conversationId);
 
   // Use the personality prompt from the database (passed from the main function)
   const personalityPrompt = influencerModelPreset.system_prompt || `You are ${influencerName}, a helpful AI assistant.`;
@@ -124,25 +125,55 @@ export async function POST(request: NextRequest) {
     const userId = user.id;
     console.log(`🚀 FAST MODE: Authenticated user ID: ${userId}`);
 
-    // Check if user has tokens before proceeding
-    console.log('🚀 FAST MODE: Checking user tokens...');
-    const { data: conversation, error: convError } = await supabaseService
+    // Get or create conversation (like regular mode) to ensure we have a valid conversation ID
+    console.log('🚀 FAST MODE: Getting or creating conversation...');
+    let conversationId;
+    let conversation;
+    
+    // First, try to get existing conversation
+    const { data: existingConversation, error: conversationError } = await supabaseService
       .from('conversations')
       .select('id, tokens')
       .eq('user_id', userId)
       .eq('influencer_id', influencerId)
       .single();
 
-    if (convError && convError.code !== 'PGRST116') { // PGRST116 = no rows found
-      console.error('Error fetching conversation:', convError);
-      throw new Error(`Failed to fetch conversation: ${convError.message}`);
+    if (conversationError && conversationError.code !== 'PGRST116') {
+      console.error('Error fetching conversation:', conversationError);
+      throw new Error(`Failed to fetch conversation: ${conversationError.message}`);
     }
 
-    // If conversation exists, check tokens
-    if (conversation && (conversation.tokens || 0) <= 0) {
-      return NextResponse.json({ 
-        error: 'No tokens remaining. Please purchase a plan to continue chatting.' 
-      }, { status: 402 }); // 402 Payment Required
+    if (existingConversation) {
+      conversationId = existingConversation.id;
+      conversation = existingConversation;
+      console.log('🚀 FAST MODE: Using existing conversation:', conversationId);
+      
+      // Check if user has tokens left
+      if ((conversation.tokens || 0) <= 0) {
+        return NextResponse.json({ 
+          error: 'No tokens remaining. Please purchase a plan to continue chatting.' 
+        }, { status: 402 }); // 402 Payment Required
+      }
+    } else {
+      // Create new conversation
+      const { data: newConversation, error: createError } = await supabaseService
+        .from('conversations')
+        .insert({
+          user_id: userId,
+          influencer_id: influencerId,
+          tokens: 100 // Give user some initial tokens
+        })
+        .select('id, tokens')
+        .single();
+
+      if (createError) {
+        console.error('Error creating conversation:', createError);
+        throw new Error(`Failed to create conversation: ${createError.message}`);
+      }
+      
+      conversationId = newConversation.id;
+      conversation = newConversation;
+      console.log('🚀 FAST MODE: Created new conversation:', conversationId);
     }
 
     // Get influencer data for AI prompt
@@ -182,7 +213,7 @@ export async function POST(request: NextRequest) {
       content,
       userId,
       influencer.name,
-      conversation?.id || 'new-conversation' // Pass conversation ID or fallback
+      conversationId // Use the real conversation ID
     );
     console.log('🚀 FAST MODE: AI reply generated successfully!');
 
@@ -191,6 +222,7 @@ export async function POST(request: NextRequest) {
       id: `temp_user_${Date.now()}`,
       user_id: userId,
       influencer_id: influencerId,
+      conversation_id: conversationId, // Include the real conversation ID
       sender: 'user',
       content: content,
       created_at: new Date().toISOString(),
@@ -201,6 +233,7 @@ export async function POST(request: NextRequest) {
       id: `temp_ai_${Date.now()}`,
       user_id: userId,
       influencer_id: influencerId,
+      conversation_id: conversationId, // Include the real conversation ID
       sender: 'influencer',
       content: influencerReplyContent,
       created_at: new Date().toISOString(),

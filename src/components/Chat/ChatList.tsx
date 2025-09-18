@@ -159,18 +159,18 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
             </p>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <button
             onClick={() => { setFeatureMessage('Video calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="p-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+            className="p-4 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
-            <Video className="w-5 h-5 text-muted-foreground" />
+            <Video className="w-6 h-6 text-muted-foreground" />
           </button>
           <button
             onClick={() => { setFeatureMessage('Voice calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="p-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+            className="p-4 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
-            <Phone className="w-5 h-5 text-muted-foreground" />
+            <Phone className="w-6 h-6 text-muted-foreground" />
           </button>
         </div>
       </div>

@@ -385,22 +385,22 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
             </>
           )}
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <button
             onClick={() => { 
               console.log('🎥 Video button clicked');
               setFeatureMessage('Video calling is coming soon — we\'re working on it!'); 
               setShowFeatureModal(true); 
             }}
-            className="p-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+            className="p-4 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
-            <Video className="h-5 w-5 text-muted-foreground" />
+            <Video className="h-6 w-6 text-muted-foreground" />
           </button>
           <button
             onClick={() => { setFeatureMessage('Voice calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="p-3 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+            className="p-4 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
           >
-            <Phone className="h-5 w-5 text-muted-foreground" />
+            <Phone className="h-6 w-6 text-muted-foreground" />
           </button>
         </div>
       </div>
