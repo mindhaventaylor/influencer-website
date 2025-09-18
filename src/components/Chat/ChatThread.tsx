@@ -7,16 +7,26 @@ import ChatCache from '@/lib/chatCache';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import { logError } from '@/lib/errorLogger';
 import { toast } from 'sonner';
+import { getClientInfluencerInfo } from '@/lib/clientConfig';
 
-const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
-  const [messages, setMessages] = useState([]);
-  const [influencer, setInfluencer] = useState(null);
+interface ChatThreadProps {
+  onGoBack: () => void;
+  influencerId?: string;
+  userToken?: string;
+  userId?: string;
+}
+
+const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadProps) => {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [influencer, setInfluencer] = useState<any>(null);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [isAiReplying, setIsAiReplying] = useState(false);
-  const messagesEndRef = useRef(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [featureMessage, setFeatureMessage] = useState('');
+
+  const clientInfluencer = getClientInfluencerInfo();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
@@ -147,30 +157,10 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
       // Show toast notification instead of blocking error
       // Check for 402 Payment Required status or token-related messages
       const errorStatus = (err as any)?.status || (err as any)?.statusCode;
-      const errorMessage = (err as any)?.message || '';
-      
-      console.log('🔍 Toast condition check:', {
-        errorStatus,
-        errorMessage,
-        userFriendlyError,
-        condition1: errorStatus === 402,
-        condition2: errorMessage.includes('No tokens remaining'),
-        condition3: errorMessage.includes('Payment Required'),
-        condition4: userFriendlyError.includes('tokens')
-      });
-      
-      if (errorStatus === 402 || 
-          errorMessage.includes('No tokens remaining') || 
-          errorMessage.includes('Payment Required') ||
-          userFriendlyError.includes('tokens')) {
-        console.log('🎯 Showing token error toast');
-        toast.error('No tokens remaining. Please purchase a plan to continue chatting.', {
-          duration: 5000,
-          description: 'Upgrade your plan to continue the conversation'
-        });
+      if (errorStatus === 402 || userFriendlyError.toLowerCase().includes('token')) {
+        toast.error('Insufficient tokens. Please purchase more tokens to continue chatting.');
       } else {
-        console.log('🎯 Showing generic error toast');
-        toast.error(`Failed to send message: ${userFriendlyError}`);
+        toast.error(userFriendlyError);
       }
     } finally {
       setIsAiReplying(false);
@@ -179,39 +169,38 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full bg-background text-foreground">
+      <div className="flex items-center justify-center h-screen-mobile bg-black text-white">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading messages...</p>
+          <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading chat...</p>
         </div>
       </div>
     );
   }
 
-
   return (
-    <div className="flex flex-col h-full bg-background text-foreground pb-20">
+    <div className="flex flex-col h-screen-mobile bg-black text-white">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between p-6 border-b border-gray-800">
         <div className="flex items-center space-x-3">
-          <button 
-            onClick={onGoBack} 
-            className="p-2 rounded-full hover:bg-secondary transition-colors"
+          <button
+            onClick={onGoBack}
+            className="p-2 rounded-full hover:bg-gray-800 transition-colors"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-6 w-6 text-white" />
           </button>
           {influencer && (
             <>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-red-500">
                 <img 
-                  src={influencer.avatar_url || '/default_avatar.png'} 
-                  alt={influencer.display_name} 
-                  className="w-8 h-8 rounded-full object-cover"
+                  src={influencer.avatar_url || clientInfluencer.avatarUrl} 
+                  alt={influencer.display_name || clientInfluencer.displayName} 
+                  className="w-full h-full object-cover"
                 />
               </div>
               <div>
-                <h1 className="text-lg font-semibold">{influencer.display_name}</h1>
-                <p className="text-sm text-muted-foreground">Online</p>
+                <h1 className="text-lg font-semibold text-white">{influencer.display_name || clientInfluencer.displayName}</h1>
+                <p className="text-sm text-gray-400">Online</p>
               </div>
             </>
           )}
@@ -219,36 +208,37 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => { setFeatureMessage('Video calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+            className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
           >
-            <Video className="h-5 w-5" />
+            <Video className="h-5 w-5 text-gray-400" />
           </button>
           <button
             onClick={() => { setFeatureMessage('Voice calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
-            className="p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+            className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
           >
-            <Phone className="h-5 w-5" />
+            <Phone className="h-5 w-5 text-gray-400" />
           </button>
         </div>
       </div>
+
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 pb-24 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-4">
         {messages.length === 0 ? (
           // Chat interface for new conversations - more focused on chatting
           <div className="flex items-center justify-center h-full">
             <div className="text-center max-w-md">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-red-500 mx-auto mb-6">
                 <img 
-                  src={influencer?.avatar_url || '/default_avatar.png'} 
-                  alt={influencer?.display_name} 
-                  className="w-12 h-12 rounded-full object-cover"
+                  src={influencer?.avatar_url || clientInfluencer.avatarUrl} 
+                  alt={influencer?.display_name || clientInfluencer.displayName} 
+                  className="w-full h-full object-cover"
                 />
               </div>
-              <h2 className="text-xl font-semibold mb-2">Chat with {influencer?.display_name}</h2>
-              <p className="text-muted-foreground mb-4">
+              <h2 className="text-2xl font-semibold mb-2 text-white">Chat with {influencer?.display_name || clientInfluencer.displayName}</h2>
+              <p className="text-gray-400 mb-4">
                 Type your message below to start chatting!
               </p>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-gray-500">
                 💬 Ready to chat
               </div>
             </div>
@@ -271,10 +261,10 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
                   className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`p-3 rounded-xl max-w-xs lg:max-w-md ${
+                    className={`p-4 rounded-2xl max-w-xs lg:max-w-md ${
                       message.sender === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-secondary text-secondary-foreground'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-800 text-white'
                     }`}
                   >
                     <MessageFormatter content={message.content} />
@@ -286,26 +276,27 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
         )}
         {isAiReplying && (
           <div className="flex items-end">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center mr-3">
+            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-red-500 mr-3">
               <img 
-                src={influencer?.avatar_url || '/default_avatar.png'} 
-                alt={influencer?.display_name} 
-                className="w-6 h-6 rounded-full object-cover"
+                src={influencer?.avatar_url || clientInfluencer.avatarUrl} 
+                alt={influencer?.display_name || clientInfluencer.displayName} 
+                className="w-full h-full object-cover"
               />
             </div>
-            <div className="p-3 rounded-xl max-w-xs lg:max-w-md bg-secondary text-secondary-foreground">
+            <div className="p-4 rounded-2xl max-w-xs lg:max-w-md bg-gray-800 text-white">
               <div className="flex items-center justify-center space-x-1">
-                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
               </div>
             </div>
           </div>
         )}
         <div ref={messagesEndRef} />
       </div>
+
       {/* Input Area - Fixed at bottom */}
-      <div className="fixed bottom-20 left-0 right-0 p-4 border-t border-border bg-card z-30">
+      <div className="fixed bottom-20 left-0 right-0 p-6 border-t border-gray-800 bg-black z-30">
         <div className="flex items-center space-x-3">
           <Input
             type="text"
@@ -317,26 +308,28 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
                 handleSendMessage();
               }
             }}
-            className="flex-1 p-4 rounded-xl bg-input border border-border text-foreground placeholder-muted-foreground"
+            className="flex-1 p-4 rounded-2xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
           />
           <Button 
             onClick={handleSendMessage} 
-            className="p-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="p-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white transition-all duration-200"
           >
             <Send className="h-5 w-5" />
           </Button>
         </div>
       </div>
+
+      {/* Feature Modal */}
       {showFeatureModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowFeatureModal(false)} />
-          <div role="dialog" aria-modal="true" className="relative bg-card text-card-foreground rounded-xl p-6 max-w-sm mx-4 border border-border">
-            <h3 className="text-lg font-semibold mb-2">Feature coming soon</h3>
-            <p className="text-sm text-muted-foreground">{featureMessage}</p>
+          <div className="relative bg-gray-900 text-white rounded-2xl p-6 max-w-sm mx-4 border border-gray-700">
+            <h3 className="text-lg font-semibold mb-2 text-white">Feature coming soon</h3>
+            <p className="text-sm text-gray-400">{featureMessage}</p>
             <div className="mt-4 flex justify-end">
               <button 
                 onClick={() => setShowFeatureModal(false)} 
-                className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium transition-colors"
               >
                 OK
               </button>
@@ -349,5 +342,3 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }) => {
 };
 
 export default ChatThread;
-
-

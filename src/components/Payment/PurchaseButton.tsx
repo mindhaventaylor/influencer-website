@@ -24,8 +24,8 @@ interface Plan {
 }
 
 interface PurchaseButtonProps {
-  plan: Plan;
-  influencerId: string;
+  plan?: Plan;
+  influencerId?: string;
   onPurchaseSuccess?: () => void;
   className?: string;
 }
@@ -39,7 +39,23 @@ export function PurchaseButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Handle case where plan is not provided
+  if (!plan) {
+    return (
+      <Card className={`relative ${className}`}>
+        <CardContent className="p-6 text-center">
+          <p className="text-gray-400">No plans available</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const handlePurchase = async () => {
+    if (!influencerId) {
+      setError('Influencer ID is required');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -103,9 +119,13 @@ export function PurchaseButton({
     }
   };
 
+  const isPopular = plan.is_popular || plan.isPopular || false;
+  const accessLevel = plan.access_level || plan.accessLevel || 'basic';
+  const priceCents = plan.price_cents || plan.priceCents || 0;
+
   return (
     <Card className={`relative ${className}`}>
-      {(plan.is_popular || plan.isPopular) && (
+      {isPopular && (
         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
           <Badge className="bg-gradient-to-r from-pink-500 to-purple-500 text-white">
             Most Popular
@@ -114,8 +134,8 @@ export function PurchaseButton({
       )}
       
       <CardHeader className="text-center">
-        <div className={`mx-auto w-12 h-12 rounded-full ${getAccessLevelColor(plan.access_level || plan.accessLevel)} flex items-center justify-center mb-4`}>
-          {getAccessLevelIcon(plan.access_level || plan.accessLevel)}
+        <div className={`mx-auto w-12 h-12 rounded-full ${getAccessLevelColor(accessLevel)} flex items-center justify-center mb-4`}>
+          {getAccessLevelIcon(accessLevel)}
         </div>
         <CardTitle className="text-xl">{plan.name}</CardTitle>
         <CardDescription className="text-gray-400">
@@ -123,7 +143,7 @@ export function PurchaseButton({
         </CardDescription>
         <div className="mt-4">
           <span className="text-4xl font-bold text-white">
-            ${((plan.price_cents || plan.priceCents) / 100).toFixed(2)}
+            ${(priceCents / 100).toFixed(2)}
           </span>
           <span className="text-gray-400 ml-2">
             / {plan.interval}
@@ -157,8 +177,8 @@ export function PurchaseButton({
 
         <Button
           onClick={handlePurchase}
-          disabled={loading}
-          className={`w-full ${plan.isPopular ? 'bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600' : 'bg-blue-600 hover:bg-blue-700'} text-white font-semibold py-3 rounded-lg transition-all duration-200`}
+          disabled={loading || !influencerId}
+          className={`w-full ${isPopular ? 'bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600' : 'bg-blue-600 hover:bg-blue-700'} text-white font-semibold py-3 rounded-lg transition-all duration-200`}
         >
           {loading ? (
             <div className="flex items-center">

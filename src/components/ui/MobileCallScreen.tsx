@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Phone, Mic, MicOff, Volume2, VolumeX, Video, VideoOff, PhoneOff } from 'lucide-react';
-import { getInfluencerInfo } from '@/lib/config';
+import { Phone, Mic, MicOff, Volume2, VolumeX, Video, VideoOff, PhoneOff, MessageCircle } from 'lucide-react';
+import { getClientInfluencerInfo } from '@/lib/clientConfig';
 
 interface MobileCallScreenProps {
   callType: 'voice' | 'video';
@@ -10,16 +10,13 @@ interface MobileCallScreenProps {
   onResumeChat: () => void;
 }
 
-export default function MobileCallScreen({ 
-  callType, 
-  onEndCall, 
-  onResumeChat 
-}: MobileCallScreenProps) {
-  const influencer = getInfluencerInfo();
+export default function MobileCallScreen({ callType, onEndCall, onResumeChat }: MobileCallScreenProps) {
   const [isMuted, setIsMuted] = useState(false);
-  const [isSpeakerOn, setIsSpeakerOn] = useState(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(callType === 'video');
   const [callDuration, setCallDuration] = useState(0);
+
+  const influencer = getClientInfluencerInfo();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -29,126 +26,133 @@ export default function MobileCallScreen({
     return () => clearInterval(timer);
   }, []);
 
-  const formatTime = (seconds: number) => {
+  const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      {/* Main Video/Audio Area */}
-      <div className="flex-1 relative">
+    <div className="flex flex-col h-screen-mobile bg-black text-white">
+      {/* Video/Audio Area */}
+      <div className="flex-1 relative bg-gradient-to-b from-gray-900 to-black">
         {callType === 'video' ? (
-          <>
+          <div className="w-full h-full flex items-center justify-center relative">
             {/* Main video feed */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20">
-              <img
-                src={influencer.avatarUrl}
-                alt={influencer.displayName}
-                className="w-full h-full object-cover"
-              />
+            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-48 h-48 mx-auto mb-6 rounded-full overflow-hidden border-4 border-red-500 shadow-2xl">
+                  <img 
+                    src={influencer.avatarUrl} 
+                    alt={influencer.displayName}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h2 className="text-3xl font-bold mb-2 text-white">{influencer.displayName}</h2>
+                <p className="text-xl text-gray-400 mb-1">{formatDuration(callDuration)}</p>
+                <p className="text-sm text-gray-500">Video Call</p>
+              </div>
             </div>
             
-            {/* User's video feed */}
-            <div className="absolute top-4 right-4 w-24 h-32 bg-card rounded-lg overflow-hidden border-2 border-primary">
-              <div className="w-full h-full bg-secondary flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-semibold">You</span>
+            {/* Self-view (small video in corner) */}
+            <div className="absolute top-6 right-6 w-24 h-32 bg-gray-700 rounded-xl overflow-hidden border-2 border-gray-600">
+              <div className="w-full h-full bg-gray-600 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-gray-500 flex items-center justify-center">
+                  <span className="text-gray-300 text-sm">You</span>
                 </div>
               </div>
             </div>
-          </>
+          </div>
         ) : (
-          /* Voice call - show influencer image */
-          <div className="flex items-center justify-center h-full">
+          <div className="w-full h-full flex items-center justify-center">
             <div className="text-center">
-              <div className="w-48 h-48 mx-auto mb-6 rounded-full overflow-hidden border-4 border-primary">
-                <img
-                  src={influencer.avatarUrl}
+              <div className="w-48 h-48 mx-auto mb-8 rounded-full overflow-hidden border-4 border-red-500 shadow-2xl bg-gray-800 flex items-center justify-center">
+                <img 
+                  src={influencer.avatarUrl} 
                   alt={influencer.displayName}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h2 className="text-2xl font-semibold text-white mb-2">
-                {influencer.displayName}
-              </h2>
-              <p className="text-lg text-gray-300 mb-4">
-                {callType === 'voice' ? 'Voice Call' : 'Video Call'}
-              </p>
-              <div className="text-sm text-gray-400">
-                {formatTime(callDuration)}
+              <h2 className="text-3xl font-bold mb-2 text-white">{influencer.displayName}</h2>
+              <p className="text-xl text-gray-400 mb-1">{formatDuration(callDuration)}</p>
+              <p className="text-sm text-gray-500">Voice Call</p>
+              
+              {/* Audio waveform animation */}
+              <div className="flex items-center justify-center space-x-1 mt-6">
+                <div className="w-1 h-8 bg-red-500 rounded-full animate-pulse"></div>
+                <div className="w-1 h-12 bg-red-500 rounded-full animate-pulse [animation-delay:0.1s]"></div>
+                <div className="w-1 h-6 bg-red-500 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+                <div className="w-1 h-10 bg-red-500 rounded-full animate-pulse [animation-delay:0.3s]"></div>
+                <div className="w-1 h-8 bg-red-500 rounded-full animate-pulse [animation-delay:0.4s]"></div>
+                <div className="w-1 h-14 bg-red-500 rounded-full animate-pulse [animation-delay:0.5s]"></div>
+                <div className="w-1 h-6 bg-red-500 rounded-full animate-pulse [animation-delay:0.6s]"></div>
+                <div className="w-1 h-10 bg-red-500 rounded-full animate-pulse [animation-delay:0.7s]"></div>
+                <div className="w-1 h-8 bg-red-500 rounded-full animate-pulse [animation-delay:0.8s]"></div>
               </div>
             </div>
           </div>
         )}
-
-        {/* Call Status */}
-        <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-          <div className="text-white">
-            <div className="text-sm text-gray-300">
-              {callType === 'voice' ? 'Voice Call' : 'Video Call'}
-            </div>
-            <div className="text-lg font-semibold">
-              {formatTime(callDuration)}
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Control Buttons */}
-      <div className="bg-card/90 backdrop-blur-sm p-6">
-        <div className="flex items-center justify-center space-x-6 mb-6">
+      {/* Controls */}
+      <div className="p-6 bg-gray-900 border-t border-gray-800">
+        <div className="flex justify-center space-x-6 mb-6">
           {/* Mute Button */}
           <button
             onClick={() => setIsMuted(!isMuted)}
-            className={`p-4 rounded-full transition-colors ${
-              isMuted ? 'bg-destructive text-destructive-foreground' : 'bg-secondary text-secondary-foreground'
+            className={`p-4 rounded-full transition-all duration-200 ${
+              isMuted 
+                ? 'bg-red-600 hover:bg-red-700 shadow-lg' 
+                : 'bg-gray-700 hover:bg-gray-600'
             }`}
           >
-            {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+            {isMuted ? <MicOff size={24} className="text-white" /> : <Mic size={24} className="text-white" />}
           </button>
 
           {/* Speaker Button */}
           <button
             onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-            className={`p-4 rounded-full transition-colors ${
-              isSpeakerOn ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+            className={`p-4 rounded-full transition-all duration-200 ${
+              isSpeakerOn 
+                ? 'bg-blue-600 hover:bg-blue-700 shadow-lg' 
+                : 'bg-gray-700 hover:bg-gray-600'
             }`}
           >
-            {isSpeakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
+            {isSpeakerOn ? <Volume2 size={24} className="text-white" /> : <VolumeX size={24} className="text-white" />}
           </button>
 
-          {/* Video Toggle (only for video calls) */}
+          {/* Video Button (only for video calls) */}
           {callType === 'video' && (
             <button
               onClick={() => setIsVideoOn(!isVideoOn)}
-              className={`p-4 rounded-full transition-colors ${
-                isVideoOn ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground'
+              className={`p-4 rounded-full transition-all duration-200 ${
+                isVideoOn 
+                  ? 'bg-blue-600 hover:bg-blue-700 shadow-lg' 
+                  : 'bg-gray-700 hover:bg-gray-600'
               }`}
             >
-              {isVideoOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
+              {isVideoOn ? <Video size={24} className="text-white" /> : <VideoOff size={24} className="text-white" />}
             </button>
           )}
 
           {/* End Call Button */}
           <button
             onClick={onEndCall}
-            className="p-4 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+            className="p-4 rounded-full bg-red-600 hover:bg-red-700 transition-all duration-200 shadow-lg"
           >
-            <PhoneOff className="w-6 h-6" />
+            <PhoneOff size={24} className="text-white" />
           </button>
         </div>
 
         {/* Resume Chat Button */}
         <button
           onClick={onResumeChat}
-          className="w-full bg-primary text-primary-foreground rounded-xl py-3 px-6 font-medium hover:bg-primary/90 transition-colors"
+          className="w-full py-4 px-6 rounded-2xl bg-gray-800 hover:bg-gray-700 text-white font-medium transition-all duration-200 border border-gray-700 flex items-center justify-center space-x-2"
         >
-          Resume Chat
+          <MessageCircle className="w-5 h-5" />
+          <span>Resume Chat</span>
         </button>
       </div>
     </div>
   );
 }
-

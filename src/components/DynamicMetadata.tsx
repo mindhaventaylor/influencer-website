@@ -1,61 +1,42 @@
 'use client';
 
-import { getInfluencerInfo, getBranding } from '@/lib/config';
+import { getClientInfluencerInfo, getClientBranding } from '@/lib/clientConfig';
 
 interface DynamicMetadataProps {
   children: React.ReactNode;
 }
 
 export function DynamicMetadata({ children }: DynamicMetadataProps) {
-  const influencer = getInfluencerInfo();
-  const branding = getBranding();
+  const influencer = getClientInfluencerInfo();
+  const branding = getClientBranding();
 
   return (
     <>
-      {/* Dynamic favicon */}
-      <link rel="icon" href={influencer.avatarUrl || '/favicon.ico'} />
+      {/* Dynamic meta tags */}
+      <meta name="description" content={`Chat with ${influencer.displayName} - ${influencer.bio}`} />
+      <meta name="keywords" content={`${influencer.displayName}, AI chat, influencer, conversation`} />
+      <meta name="author" content={influencer.displayName} />
       
-      {/* Dynamic theme color */}
-      <meta name="theme-color" content={branding.primaryColor} />
-      
-      {/* Dynamic Open Graph */}
+      {/* Open Graph */}
       <meta property="og:title" content={`${influencer.displayName} AI Chat`} />
       <meta property="og:description" content={influencer.bio} />
       <meta property="og:image" content={influencer.avatarUrl} />
-      <meta property="og:url" content={typeof window !== 'undefined' ? window.location.href : ''} />
+      <meta property="og:type" content="website" />
+      <meta property="og:site_name" content={`${influencer.displayName} AI Chat`} />
       
-      {/* Dynamic Twitter Card */}
+      {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={`${influencer.displayName} AI Chat`} />
       <meta name="twitter:description" content={influencer.bio} />
       <meta name="twitter:image" content={influencer.avatarUrl} />
       
-      {/* Dynamic CSS variables */}
-      <style jsx global>{`
-        :root {
-          --influencer-primary: ${branding.primaryColor};
-          --influencer-secondary: ${branding.secondaryColor};
-          --influencer-accent: ${branding.accentColor};
-          --influencer-name: "${influencer.displayName}";
-          --influencer-handle: "${influencer.handle}";
-        }
-        
-        .influencer-gradient {
-          background: linear-gradient(135deg, var(--influencer-primary), var(--influencer-secondary));
-        }
-        
-        .influencer-text-primary {
-          color: var(--influencer-primary);
-        }
-        
-        .influencer-branding {
-          --primary: var(--influencer-primary);
-          --secondary: var(--influencer-secondary);
-          --accent: var(--influencer-accent);
-        }
-        
-        ${branding.customCss}
-      `}</style>
+      {/* Favicon */}
+      <link rel="icon" href={branding.faviconUrl} />
+      <link rel="apple-touch-icon" href={branding.faviconUrl} />
+      
+      {/* Theme colors */}
+      <meta name="theme-color" content={branding.primaryColor} />
+      <meta name="msapplication-TileColor" content={branding.primaryColor} />
       
       {children}
     </>

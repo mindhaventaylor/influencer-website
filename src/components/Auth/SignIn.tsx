@@ -3,143 +3,133 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
 import api from '@/api';
-import { getInfluencerInfo } from '@/lib/config';
+import { getClientInfluencerInfo } from '@/lib/clientConfig';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 
 interface SignInProps {
   onSignInSuccess: (user: { id: string; email: string; token: string }) => void;
-  onGoToSignUp: () => void;
+  onSwitchToSignUp: () => void;
 }
 
-const SignIn = ({ onSignInSuccess, onGoToSignUp }: SignInProps) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProps) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const influencer = getInfluencerInfo();
 
-  const handleSignIn = async () => {
-    setIsLoading(true);
+  const influencer = getClientInfluencerInfo();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
     setError(null);
-    
+
     try {
-      const { data, error } = await api.signIn(email, password);
-      if (error) throw error;
-      const { session, user } = data;
-      onSignInSuccess({ id: user.id, email: user.email, token: session.access_token });
+      const response = await api.signIn(email, password);
+      
+      if (response.success && response.user) {
+        onSignInSuccess(response.user);
+      } else {
+        setError(response.error || 'Sign in failed');
+      }
     } catch (err) {
+      console.error('Sign in error:', err);
       setError(getUserFriendlyError(err));
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen-mobile bg-background text-foreground p-6">
-      <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold mb-2">Welcome to Project {influencer.displayName}</h1>
-        <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden border-2 border-primary">
-          <img 
-            src={influencer.avatarUrl || "/default_avatar.png"} 
-            alt={influencer.displayName} 
-            className="w-full h-full object-cover"
-          />
-        </div>
-      </div>
-      
-      <div className="w-full max-w-sm">
-        <h2 className="text-xl font-semibold mb-6 text-center">Sign In</h2>
-        <div className="space-y-4">
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-4 rounded-xl bg-input border border-border text-foreground placeholder-muted-foreground"
-          />
-          <div className="relative">
-            <Input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full p-4 rounded-xl bg-input border border-border text-foreground placeholder-muted-foreground pr-12"
+    <div className="min-h-screen-mobile bg-black flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full overflow-hidden border-2 border-red-500">
+            <img 
+              src={influencer.avatarUrl} 
+              alt={influencer.displayName}
+              className="w-full h-full object-cover"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
           </div>
-          {error && <p className="text-destructive text-sm text-center">{error}</p>}
-          
+          <h1 className="text-3xl font-bold text-white mb-2">Welcome back!</h1>
+          <p className="text-gray-400">Sign in to chat with {influencer.displayName}</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+              Email
+            </label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              required
+              className="w-full p-4 rounded-xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              Password
+            </label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                className="w-full p-4 pr-12 rounded-xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
           <Button
-            onClick={handleSignIn}
-            disabled={isLoading}
-            className="w-full p-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex items-center justify-center"
+            type="submit"
+            disabled={loading}
+            className="w-full p-4 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
           >
-            {isLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                Signing In...
-              </>
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Signing in...
+              </div>
             ) : (
               'Sign In'
             )}
           </Button>
-          
-          <div className="text-center">
-            <button className="text-sm text-muted-foreground hover:text-foreground">
-              Forgot password?
+        </form>
+
+        <div className="mt-8 text-center">
+          <p className="text-gray-400">
+            Don't have an account?{' '}
+            <button
+              onClick={onSwitchToSignUp}
+              className="text-red-400 hover:text-red-300 font-semibold transition-colors"
+            >
+              Sign up
             </button>
-          </div>
+          </p>
         </div>
-        
-        {/* Social Login */}
-        <div className="mt-6 space-y-3">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-background text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            <Button
-              variant="outline"
-              className="w-full p-4 rounded-xl border-border hover:bg-secondary"
-            >
-              <span className="text-foreground">Sign in with Google</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full p-4 rounded-xl border-border hover:bg-secondary"
-            >
-              <span className="text-foreground">Sign in with Facebook</span>
-            </Button>
-          </div>
-        </div>
-        
-        <p className="mt-6 text-center text-muted-foreground">
-          Don't have an account?{" "}
-          <button 
-            className="text-primary hover:text-primary/80 font-medium" 
-            onClick={onGoToSignUp}
-          >
-            Sign Up
-          </button>
-        </p>
       </div>
     </div>
   );
-};
-
-export default SignIn;
-
-
+}

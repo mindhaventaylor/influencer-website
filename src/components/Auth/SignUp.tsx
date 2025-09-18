@@ -3,11 +3,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import api from '@/api';
 import { getUserFriendlyError } from '@/lib/errorMessages';
+import { getClientInfluencerInfo } from '@/lib/clientConfig';
 
-const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
+interface SignUpProps {
+  onSignUpSuccess: (user: { id: string; email: string; token: string }) => void;
+  onGoBack: () => void;
+  profileData?: any;
+}
+
+const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,9 +26,11 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToConsent, setAgreedToConsent] = useState(false);
   const [agreedToSharing, setAgreedToSharing] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const influencer = getClientInfluencerInfo();
 
   // Consider the form complete when email, password, date of birth, and all three consents are provided
   const isFormComplete = email && password && dob && agreedToTerms && agreedToConsent && agreedToSharing;
@@ -104,125 +113,184 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen-mobile bg-black text-white p-4 overflow-y-auto">
-      <div className="w-full flex justify-start mb-4">
-        <Button variant="ghost" onClick={onGoBack} className="text-white">
-          &larr;
+    <div className="min-h-screen-mobile bg-black flex flex-col p-6">
+      <div className="flex items-center mb-8">
+        <Button 
+          variant="ghost" 
+          onClick={onGoBack} 
+          className="text-white hover:bg-gray-800 p-2 rounded-xl"
+        >
+          <ArrowLeft className="w-5 h-5" />
         </Button>
+        <h1 className="text-2xl font-bold text-white ml-4">Create Account</h1>
       </div>
-      <h1 className="text-3xl font-bold mb-8">Create Account</h1>
-      <img src="/default_avatar.png" alt="Avatar" className="w-24 h-24 rounded-full mb-8" />
-      <h2 className="text-2xl font-semibold mb-6">Welcome to Project Taylor</h2>
-      <div className="w-full max-w-sm space-y-4">
-        <Input
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500"
-        />
-        <div className="relative w-full max-w-sm">
-          <Input
-            type={showPassword ? 'text' : 'password'}
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
-          >
-            {showPassword ? <EyeOff /> : <Eye />}
-          </button>
-        </div>
-        <div className="text-gray-400 text-sm mt-4">When were you born? (Must be 18+)</div>
-        <div className="relative">
-          <Input
-            type="text"
-            readOnly
-            placeholder="mm/dd/yyyy"
-            value={dob}
-            onClick={() => setShowDatePicker(true)}
-            className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-500 cursor-pointer"
-          />
-          {showDatePicker && (
-            <div className="absolute left-0 mt-2 z-50 w-full bg-gray-900 border border-gray-700 rounded-lg p-3">
-              <DatePickerPopup
-                month={pickerMonth}
-                day={pickerDay}
-                year={pickerYear}
-                onMonthChange={setPickerMonth}
-                onDayChange={setPickerDay}
-                onYearChange={setPickerYear}
-                onCancel={() => setShowDatePicker(false)}
-                onSet={() => {
-                  const mm = String(pickerMonth).padStart(2, '0');
-                  const dd = String(pickerDay).padStart(2, '0');
-                  const formatted = `${mm}/${dd}/${pickerYear}`;
-                  setDob(formatted);
-                  setShowDatePicker(false);
-                }}
+
+      <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full overflow-hidden border-2 border-red-500">
+              <img 
+                src={influencer.avatarUrl} 
+                alt={influencer.displayName}
+                className="w-full h-full object-cover"
               />
             </div>
-          )}
-        </div>
+            <h2 className="text-2xl font-semibold text-white mb-2">Welcome to {influencer.displayName}</h2>
+            <p className="text-gray-400">Join the conversation</p>
+          </div>
 
-        {/* Disclaimers and consent checkboxes at the bottom */}
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Email</label>
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-4 rounded-xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
+              />
+            </div>
 
-        {signupSuccess && (
-          <div className="bg-green-900 border border-green-700 rounded-lg p-4 mb-4">
-            <p className="text-green-300 text-sm">
-              Account created successfully! Please check your email and click the confirmation link to complete your registration.
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-4 pr-12 rounded-xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Date of Birth (Must be 18+)</label>
+              <div className="relative">
+                <Input
+                  type="text"
+                  readOnly
+                  placeholder="mm/dd/yyyy"
+                  value={dob}
+                  onClick={() => setShowDatePicker(true)}
+                  className="w-full p-4 rounded-xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 cursor-pointer focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
+                />
+                {showDatePicker && (
+                  <div className="absolute left-0 mt-2 z-50 w-full bg-gray-900 border border-gray-700 rounded-xl p-4 shadow-xl">
+                    <DatePickerPopup
+                      month={pickerMonth}
+                      day={pickerDay}
+                      year={pickerYear}
+                      onMonthChange={setPickerMonth}
+                      onDayChange={setPickerDay}
+                      onYearChange={setPickerYear}
+                      onCancel={() => setShowDatePicker(false)}
+                      onSet={() => {
+                        const mm = String(pickerMonth).padStart(2, '0');
+                        const dd = String(pickerDay).padStart(2, '0');
+                        const formatted = `${mm}/${dd}/${pickerYear}`;
+                        setDob(formatted);
+                        setShowDatePicker(false);
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {signupSuccess && (
+              <div className="p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-sm">
+                Account created successfully! Please check your email and click the confirmation link to complete your registration.
+              </div>
+            )}
+            
+            {error && (
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+
+            <Button
+              onClick={handleSignUp}
+              disabled={!isFormComplete || signupSuccess || isLoading}
+              className={`w-full p-4 rounded-xl font-semibold transition-all duration-200 ${
+                isFormComplete && !signupSuccess && !isLoading 
+                  ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg' 
+                  : 'bg-gray-600 hover:bg-gray-700 text-white'
+              }`}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Creating Account...
+                </div>
+              ) : signupSuccess ? (
+                'Account Created'
+              ) : (
+                'Create Account'
+              )}
+            </Button>
+
+            <div className="space-y-3 text-xs text-gray-400">
+              <div className="flex items-start space-x-3">
+                <Checkbox 
+                  id="terms" 
+                  checked={agreedToTerms}
+                  onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} 
+                  className="mt-0.5"
+                />
+                <Label htmlFor="terms" className="text-xs leading-relaxed">
+                  I have read and agree to {influencer.displayName}'s{' '}
+                  <a href="#" className="text-red-400 hover:text-red-300">Terms & Conditions</a>,{' '}
+                  <a href="#" className="text-red-400 hover:text-red-300">Privacy Policy</a>, and{' '}
+                  <a href="#" className="text-red-400 hover:text-red-300">Disclaimer</a>
+                </Label>
+              </div>
+              <div className="flex items-start space-x-3">
+                <Checkbox 
+                  id="consent" 
+                  checked={agreedToConsent}
+                  onCheckedChange={(checked) => setAgreedToConsent(checked as boolean)} 
+                  className="mt-0.5"
+                />
+                <Label htmlFor="consent" className="text-xs leading-relaxed">
+                  I consent to {influencer.displayName} processing my information to personalize my experience and improve its AI models.
+                </Label>
+              </div>
+              <div className="flex items-start space-x-3">
+                <Checkbox 
+                  id="sharing" 
+                  checked={agreedToSharing}
+                  onCheckedChange={(checked) => setAgreedToSharing(checked as boolean)} 
+                  className="mt-0.5"
+                />
+                <Label htmlFor="sharing" className="text-xs leading-relaxed">
+                  I consent to {influencer.displayName} selling or sharing my personal information with third-party partners for advertising or similar purposes.
+                </Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-gray-400">
+              Already have an account?{' '}
+              <button
+                onClick={onGoBack}
+                className="text-red-400 hover:text-red-300 font-semibold transition-colors"
+              >
+                Sign in
+              </button>
             </p>
-          </div>
-        )}
-        
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        <Button
-          onClick={handleSignUp}
-          disabled={!isFormComplete || signupSuccess || isLoading}
-          className={`w-full p-3 rounded-lg ${isFormComplete && !signupSuccess && !isLoading ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-600 hover:bg-gray-700'} text-white font-bold flex items-center justify-center`}
-        >
-          {isLoading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-              Creating Account...
-            </>
-          ) : signupSuccess ? (
-            'Account Created'
-          ) : (
-            'Create Account'
-          )}
-        </Button>
-        <div className="space-y-2 text-xs text-gray-400 mt-4">
-          <div className="flex items-start space-x-2">
-            <Checkbox id="terms" onCheckedChange={setAgreedToTerms} />
-            <Label htmlFor="terms" className="text-xs">
-              I have read and agree to Project Taylor's <a href="#" className="text-red-500">Terms & Conditions</a>, <a href="#" className="text-red-500">Privacy Policy</a>, and <a href="#" className="text-red-500">Disclaimer</a>
-            </Label>
-          </div>
-          <div className="flex items-start space-x-2">
-            <Checkbox id="consent" onCheckedChange={setAgreedToConsent} />
-            <Label htmlFor="consent" className="text-xs">
-              I consent to Project Taylor processing my information to personalize my experience and improve its AI models.
-            </Label>
-          </div>
-          <div className="flex items-start space-x-2">
-            <Checkbox id="sharing" onCheckedChange={setAgreedToSharing} />
-            <Label htmlFor="sharing" className="text-xs">
-              I consent to Project Taylor selling or sharing my personal information with third-party partners for advertising or similar purposes.
-            </Label>
           </div>
         </div>
       </div>
-      <p className="mt-6 text-gray-400">
-        Already Have an Account?{' '}
-        <span className="text-blue-500 cursor-pointer" onClick={onGoBack}>
-          Log in
-        </span>
-      </p>
     </div>
   );
 };
@@ -230,7 +298,16 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }) => {
 export default SignUp;
 
 // Small inline date picker popup component
-function DatePickerPopup({ month, day, year, onMonthChange, onDayChange, onYearChange, onCancel, onSet }) {
+function DatePickerPopup({ month, day, year, onMonthChange, onDayChange, onYearChange, onCancel, onSet }: {
+  month: number;
+  day: number;
+  year: number;
+  onMonthChange: (month: number) => void;
+  onDayChange: (day: number) => void;
+  onYearChange: (year: number) => void;
+  onCancel: () => void;
+  onSet: () => void;
+}) {
   const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
@@ -242,36 +319,57 @@ function DatePickerPopup({ month, day, year, onMonthChange, onDayChange, onYearC
   const years = [];
   for (let y = maxYear; y >= minYear; y--) years.push(y);
 
-  const daysInMonth = (m, y) => new Date(y, m, 0).getDate();
+  const daysInMonth = (m: number, y: number) => new Date(y, m, 0).getDate();
   const days = [];
   const dim = daysInMonth(month, year);
   for (let d = 1; d <= dim; d++) days.push(d);
 
   return (
     <div>
-      <div className="flex space-x-2 mb-3">
-        <select className="p-2 bg-gray-800 border border-gray-700 rounded" value={month} onChange={(e) => onMonthChange(Number(e.target.value))}>
+      <div className="flex space-x-2 mb-4">
+        <select 
+          className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20" 
+          value={month} 
+          onChange={(e) => onMonthChange(Number(e.target.value))}
+        >
           {months.map((m, i) => (
             <option key={m} value={i + 1}>{m}</option>
           ))}
         </select>
-        <select className="p-2 bg-gray-800 border border-gray-700 rounded" value={day} onChange={(e) => onDayChange(Number(e.target.value))}>
+        <select 
+          className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20" 
+          value={day} 
+          onChange={(e) => onDayChange(Number(e.target.value))}
+        >
           {days.map(d => (
             <option key={d} value={d}>{d}</option>
           ))}
         </select>
-        <select className="p-2 bg-gray-800 border border-gray-700 rounded" value={year} onChange={(e) => onYearChange(Number(e.target.value))}>
+        <select 
+          className="flex-1 p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20" 
+          value={year} 
+          onChange={(e) => onYearChange(Number(e.target.value))}
+        >
           {years.map(y => (
             <option key={y} value={y}>{y}</option>
           ))}
         </select>
       </div>
-      <div className="flex justify-end space-x-2">
-        <button className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600" onClick={onCancel}>Cancel</button>
-        <button className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500" onClick={onSet}>Set</button>
+      <div className="flex justify-end space-x-3">
+        <Button 
+          variant="outline" 
+          onClick={onCancel}
+          className="px-4 py-2 rounded-lg border-gray-700 text-gray-300 hover:bg-gray-800"
+        >
+          Cancel
+        </Button>
+        <Button 
+          onClick={onSet}
+          className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
+        >
+          Set
+        </Button>
       </div>
     </div>
   );
 }
-
-
