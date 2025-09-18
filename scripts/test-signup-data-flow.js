@@ -1,13 +1,21 @@
 #!/usr/bin/env node
 
 const { createClient } = require('@supabase/supabase-js');
+const { loadConfig, validateEnvironment } = require('./config-loader');
+
+require('dotenv').config({ path: '.env.local' });
 
 console.log('🔍 **TESTING SIGNUP DATA FLOW**\n');
 
 async function testSignupDataFlow() {
   try {
-    // Load config
-    const config = require('../influencer.config.js');
+    // Validate environment variables
+    if (!validateEnvironment()) {
+      process.exit(1);
+    }
+    
+    // Load config from environment
+    const config = loadConfig();
     
     // Initialize Supabase client
     const supabaseUrl = config.database.supabase.url;

@@ -13,7 +13,15 @@ async function setupConfiguredPlans() {
     console.log('✅ Connected to database successfully!\n');
     
     // Load config
-    const config = require('../influencer.config.js');
+    const { loadConfig } = require('./config-loader');
+const { validateEnvironment } = require('./config-loader');
+
+// Validate environment variables
+if (!validateEnvironment()) {
+  process.exit(1);
+}
+
+const config = loadConfig();
     
     // Get the influencer from database
     const influencers = await sql`

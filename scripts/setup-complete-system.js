@@ -2,9 +2,160 @@
 
 const postgres = require('postgres');
 const fs = require('fs');
-const config = require('../influencer.config.js');
+
+// Load config (fallback for development)
+let config;
+try {
+  config = require('../influencer.config.js');
+} catch (error) {
+  console.error('❌ influencer.config.js not found. Please create it first.');
+  process.exit(1);
+}
 
 const sql = postgres(config.database.url);
+
+// Function to generate .env files from config
+function generateEnvFiles() {
+  console.log('📝 Generating environment files...');
+  
+  try {
+    // Generate .env.local for development
+    const envLocalContent = `# Generated from influencer.config.js - Development Environment
+# Influencer: ${config.influencer.displayName} (${config.influencer.handle})
+
+# Influencer Information
+INFLUENCER_ID=${config.influencer.id}
+INFLUENCER_NAME=${config.influencer.name}
+INFLUENCER_HANDLE=${config.influencer.handle}
+INFLUENCER_DISPLAY_NAME=${config.influencer.displayName}
+INFLUENCER_BIO=${config.influencer.bio}
+INFLUENCER_AVATAR_URL=${config.influencer.avatarUrl}
+INFLUENCER_WEBSITE_URL=${config.influencer.websiteUrl}
+INFLUENCER_DATABASE_ID=${config.influencer.databaseId || ''}
+INFLUENCER_INSTAGRAM=${config.influencer.socialMedia.instagram}
+INFLUENCER_TWITTER=${config.influencer.socialMedia.twitter}
+INFLUENCER_TIKTOK=${config.influencer.socialMedia.tiktok}
+
+# Branding
+BRANDING_PRIMARY_COLOR=${config.branding.primaryColor}
+BRANDING_SECONDARY_COLOR=${config.branding.secondaryColor}
+BRANDING_ACCENT_COLOR=${config.branding.accentColor}
+BRANDING_LOGO_URL=${config.branding.logoUrl}
+BRANDING_FAVICON_URL=${config.branding.faviconUrl}
+BRANDING_CUSTOM_CSS=${config.branding.customCss || ''}
+
+# Plans Configuration (JSON string)
+PLANS_CONFIG=${JSON.stringify(config.plans)}
+
+# Stripe Configuration
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${config.stripe.publishableKey}
+STRIPE_SECRET_KEY=${config.stripe.secretKey}
+STRIPE_WEBHOOK_SECRET=${config.stripe.webhookSecret}
+
+# Stripe Products (JSON string)
+STRIPE_PRODUCTS=${JSON.stringify(config.stripe.products)}
+
+# AI Configuration
+AI_CREATOR_ID=${config.ai.creator_id}
+OPENAI_API_KEY=${config.ai.openaiApiKey}
+AI_MODEL=${config.ai.model}
+AI_TEMPERATURE=${config.ai.temperature}
+AI_MAX_TOKENS=${config.ai.maxTokens}
+AI_PERSONALITY_PROMPT=${config.ai.personalityPrompt}
+AI_SYSTEM_MESSAGE=${config.ai.systemMessage}
+
+# Database Configuration
+DATABASE_URL=${config.database.url}
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=${config.database.supabase.url}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${config.database.supabase.anonKey}
+SUPABASE_SERVICE_ROLE_KEY=${config.database.supabase.serviceRoleKey}
+
+# Deployment Configuration
+DEPLOYMENT_DOMAIN=${config.deployment.domain}
+DEPLOYMENT_BASE_URL=${config.deployment.baseUrl}
+NODE_ENV=development
+`;
+
+    // Generate .env for production
+    const envContent = `# Generated from influencer.config.js - Production Environment
+# Influencer: ${config.influencer.displayName} (${config.influencer.handle})
+
+# Influencer Information
+INFLUENCER_ID=${config.influencer.id}
+INFLUENCER_NAME=${config.influencer.name}
+INFLUENCER_HANDLE=${config.influencer.handle}
+INFLUENCER_DISPLAY_NAME=${config.influencer.displayName}
+INFLUENCER_BIO=${config.influencer.bio}
+INFLUENCER_AVATAR_URL=${config.influencer.avatarUrl}
+INFLUENCER_WEBSITE_URL=${config.influencer.websiteUrl}
+INFLUENCER_DATABASE_ID=${config.influencer.databaseId || ''}
+INFLUENCER_INSTAGRAM=${config.influencer.socialMedia.instagram}
+INFLUENCER_TWITTER=${config.influencer.socialMedia.twitter}
+INFLUENCER_TIKTOK=${config.influencer.socialMedia.tiktok}
+
+# Branding
+BRANDING_PRIMARY_COLOR=${config.branding.primaryColor}
+BRANDING_SECONDARY_COLOR=${config.branding.secondaryColor}
+BRANDING_ACCENT_COLOR=${config.branding.accentColor}
+BRANDING_LOGO_URL=${config.branding.logoUrl}
+BRANDING_FAVICON_URL=${config.branding.faviconUrl}
+BRANDING_CUSTOM_CSS=${config.branding.customCss || ''}
+
+# Plans Configuration (JSON string)
+PLANS_CONFIG=${JSON.stringify(config.plans)}
+
+# Stripe Configuration
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${config.stripe.publishableKey}
+STRIPE_SECRET_KEY=${config.stripe.secretKey}
+STRIPE_WEBHOOK_SECRET=${config.stripe.webhookSecret}
+
+# Stripe Products (JSON string)
+STRIPE_PRODUCTS=${JSON.stringify(config.stripe.products)}
+
+# AI Configuration
+AI_CREATOR_ID=${config.ai.creator_id}
+OPENAI_API_KEY=${config.ai.openaiApiKey}
+AI_MODEL=${config.ai.model}
+AI_TEMPERATURE=${config.ai.temperature}
+AI_MAX_TOKENS=${config.ai.maxTokens}
+AI_PERSONALITY_PROMPT=${config.ai.personalityPrompt}
+AI_SYSTEM_MESSAGE=${config.ai.systemMessage}
+
+# Database Configuration
+DATABASE_URL=${config.database.url}
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=${config.database.supabase.url}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${config.database.supabase.anonKey}
+SUPABASE_SERVICE_ROLE_KEY=${config.database.supabase.serviceRoleKey}
+
+# Deployment Configuration
+DEPLOYMENT_DOMAIN=${config.deployment.domain}
+DEPLOYMENT_BASE_URL=${config.deployment.baseUrl}
+NODE_ENV=production
+`;
+
+    // Write .env.local
+    fs.writeFileSync('./.env.local', envLocalContent);
+    console.log('   ✅ Generated .env.local for development');
+
+    // Write .env
+    fs.writeFileSync('./.env', envContent);
+    console.log('   ✅ Generated .env for production');
+
+    console.log('   📋 Environment files ready for deployment!');
+    console.log('   🔒 Remember to add these files to your deployment platform:');
+    console.log('      - Vercel: Add environment variables in project settings');
+    console.log('      - Other platforms: Upload .env file or set variables manually');
+
+    return true;
+  } catch (error) {
+    console.error('❌ Error generating environment files:', error.message);
+    return false;
+  }
+}
 
 // Function to update Stripe product names to match configuration
 async function updateStripeProductNames() {
@@ -149,13 +300,18 @@ async function setupCompleteSystem() {
   try {
     console.log('🚀 **COMPLETE SYSTEM SETUP**\n');
 
-    // Step 0: Update Stripe product names
-    console.log('0️⃣ Updating Stripe product names...');
+    // Step 0: Generate environment files
+    console.log('0️⃣ Generating environment files...');
+    generateEnvFiles();
+    console.log('');
+
+    // Step 1: Update Stripe product names
+    console.log('1️⃣ Updating Stripe product names...');
     await updateStripeProductNames();
     console.log('');
 
-    // Step 1: Update config with real Stripe price IDs
-    console.log('1️⃣ Updating configuration with real Stripe price IDs...');
+    // Step 2: Update config with real Stripe price IDs
+    console.log('2️⃣ Updating configuration with real Stripe price IDs...');
     const configUpdated = updateConfigWithRealStripeIds();
     if (configUpdated) {
       // Reload the config to get the updated values
@@ -165,8 +321,8 @@ async function setupCompleteSystem() {
     }
     console.log('');
 
-    // 2. Create or update the influencer
-    console.log('2️⃣ Setting up influencer...');
+    // 3. Create or update the influencer
+    console.log('3️⃣ Setting up influencer...');
     
     const influencerData = {
       name: config.influencer.name || 'Teste',
@@ -216,8 +372,8 @@ async function setupCompleteSystem() {
     fs.writeFileSync('./influencer.config.js', `module.exports = ${JSON.stringify(updatedConfig, null, 2)};`);
     console.log(`✅ Saved influencer database ID to config: ${influencerId}`);
 
-    // 3. Update existing users with missing data
-    console.log('\n3️⃣ Updating users with missing data...');
+    // 4. Update existing users with missing data
+    console.log('\n4️⃣ Updating users with missing data...');
     
     const usersWithNullData = await sql`
       SELECT id, email FROM users 
@@ -238,8 +394,8 @@ async function setupCompleteSystem() {
       console.log(`✅ Updated user ${user.email}: username=${username}, display_name=${displayName}`);
     }
 
-    // 4. Set up plans from configuration
-    console.log('\n4️⃣ Setting up plans from configuration...');
+    // 5. Set up plans from configuration
+    console.log('\n5️⃣ Setting up plans from configuration...');
     
     // Check if plans already exist for this influencer
     const existingPlans = await sql`
@@ -286,8 +442,8 @@ async function setupCompleteSystem() {
       console.log(`✅ Successfully created ${config.plans.length} plans!`);
     }
 
-    // 5. Verify the setup
-    console.log('\n5️⃣ Verifying setup...');
+    // 6. Verify the setup
+    console.log('\n6️⃣ Verifying setup...');
     
     const influencerCount = await sql`SELECT COUNT(*) as count FROM influencers WHERE is_active = true`;
     const userCount = await sql`SELECT COUNT(*) as count FROM users`;
@@ -333,11 +489,21 @@ async function setupCompleteSystem() {
     console.log('   2. Test chat functionality');
     console.log('   3. Test plan purchases (Stripe names and price IDs updated)');
     console.log('   4. Verify profile shows correct plan names');
+    console.log('\n🔒 Environment Files:');
+    console.log('   ✅ Generated .env.local for development');
+    console.log('   ✅ Generated .env for production');
+    console.log('   ✅ All sensitive data moved to environment variables');
+    console.log('   ✅ Ready for secure deployment');
     console.log('\n💳 Stripe Integration:');
     console.log('   ✅ Stripe product names updated to match configuration');
     console.log('   ✅ Configuration automatically updated with real Stripe price IDs');
     console.log('   ✅ Plans created in database from configuration');
     console.log('   ✅ Payment system ready for production use');
+    console.log('\n🚀 Deployment Instructions:');
+    console.log('   - For Vercel: Add environment variables in project settings');
+    console.log('   - For other platforms: Use the generated .env file');
+    console.log('   - Remove influencer.config.js from your repository');
+    console.log('   - The system now uses environment variables for all configuration');
 
   } catch (error) {
     console.error('❌ Error setting up system:', error);

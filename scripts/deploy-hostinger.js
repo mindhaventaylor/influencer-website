@@ -1,7 +1,17 @@
 #!/usr/bin/env node
 
+require('dotenv').config({ path: '.env.local' });/usr/bin/env node
+
 // Script to prepare deployment package for Hostinger
-const config = require('../influencer.config.js');
+const { loadConfig } = require('./config-loader');
+const { validateEnvironment } = require('./config-loader');
+
+// Validate environment variables
+if (!validateEnvironment()) {
+  process.exit(1);
+}
+
+const config = loadConfig();
 const fs = require('fs');
 const path = require('path');
 

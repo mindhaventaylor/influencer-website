@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
-import { getInfluencerConfig } from './config'
+import { getDatabaseConfig } from './config'
 
-const config = getInfluencerConfig()
-const supabaseUrl = config.database.supabase.url
-const supabaseAnonKey = config.database.supabase.anonKey
+const config = getDatabaseConfig()
+const supabaseUrl = config.supabase.url
+const supabaseAnonKey = config.supabase.anonKey
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)

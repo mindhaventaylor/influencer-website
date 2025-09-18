@@ -1,9 +1,8 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
-// Get database URL from environment or config
-const influencerConfig = require('../../../influencer.config.js');
-const connectionString = influencerConfig.database.url;
+// Get database URL from environment variables
+const connectionString = process.env.DATABASE_URL || '';
 
 export const postgresClient = postgres(connectionString, {
   max: 20, // Maximum number of connections

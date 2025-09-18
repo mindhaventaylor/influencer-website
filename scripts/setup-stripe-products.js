@@ -1,7 +1,17 @@
 #!/usr/bin/env node
 
+require('dotenv').config({ path: '.env.local' });/usr/bin/env node
+
 const Stripe = require('stripe');
-const config = require('../influencer.config.js');
+const { loadConfig } = require('./config-loader');
+const { validateEnvironment } = require('./config-loader');
+
+// Validate environment variables
+if (!validateEnvironment()) {
+  process.exit(1);
+}
+
+const config = loadConfig();
 
 async function setupStripeProducts() {
   console.log('💳 Setting up Stripe products for influencer...\n');

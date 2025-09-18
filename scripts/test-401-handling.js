@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+require('dotenv').config({ path: '.env.local' });/usr/bin/env node
+
 const { createClient } = require('@supabase/supabase-js');
 
 console.log('🔐 **TESTING 401 ERROR HANDLING**\n');
@@ -7,7 +9,15 @@ console.log('🔐 **TESTING 401 ERROR HANDLING**\n');
 async function test401Handling() {
   try {
     // Load config
-    const config = require('../influencer.config.js');
+    const { loadConfig } = require('./config-loader');
+const { validateEnvironment } = require('./config-loader');
+
+// Validate environment variables
+if (!validateEnvironment()) {
+  process.exit(1);
+}
+
+const config = loadConfig();
     
     // Initialize Supabase client
     const supabaseUrl = config.database.supabase.url;

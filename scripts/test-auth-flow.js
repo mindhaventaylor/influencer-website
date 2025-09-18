@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config({ path: '.env.local' });
 
 console.log('🔐 **TESTING AUTHENTICATION FLOW**\n');
 
 async function testAuthFlow() {
   try {
-    // Load config
-    const config = require('../influencer.config.js');
+    // Load config from environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
-    // Initialize Supabase client
-    const supabaseUrl = config.database.supabase.url;
-    const supabaseAnonKey = config.database.supabase.anonKey;
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('❌ Missing Supabase environment variables!');
+      console.log('💡 Make sure you have run: npm run migrate:env');
+      process.exit(1);
+    }
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     console.log('🔍 Testing authentication flow...');

@@ -5,7 +5,15 @@ require('dotenv').config({ path: '.env.local' });
 
 const Stripe = require('stripe');
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const config = require('../influencer.config.js');
+const { loadConfig } = require('./config-loader');
+const { validateEnvironment } = require('./config-loader');
+
+// Validate environment variables
+if (!validateEnvironment()) {
+  process.exit(1);
+}
+
+const config = loadConfig();
 
 console.log('🔍 **CHECKING STRIPE PRICES**\n');
 

@@ -1,14 +1,82 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+require('dotenv').config({ path: '.env.local' });
 
 console.log('💳 **UPDATING STRIPE PRICE IDs**\n');
 
+function generateUpdatedEnvContent(plans, stripeProducts) {
+  return `# Generated from influencer.config.js - Development Environment
+# Influencer: ${process.env.INFLUENCER_DISPLAY_NAME} (${process.env.INFLUENCER_HANDLE})
+
+# Influencer Information
+INFLUENCER_ID=${process.env.INFLUENCER_ID}
+INFLUENCER_NAME=${process.env.INFLUENCER_NAME}
+INFLUENCER_HANDLE=${process.env.INFLUENCER_HANDLE}
+INFLUENCER_DISPLAY_NAME=${process.env.INFLUENCER_DISPLAY_NAME}
+INFLUENCER_BIO=${process.env.INFLUENCER_BIO}
+INFLUENCER_AVATAR_URL=${process.env.INFLUENCER_AVATAR_URL}
+INFLUENCER_WEBSITE_URL=${process.env.INFLUENCER_WEBSITE_URL}
+INFLUENCER_DATABASE_ID=${process.env.INFLUENCER_DATABASE_ID}
+INFLUENCER_INSTAGRAM=${process.env.INFLUENCER_INSTAGRAM}
+INFLUENCER_TWITTER=${process.env.INFLUENCER_TWITTER}
+INFLUENCER_TIKTOK=${process.env.INFLUENCER_TIKTOK}
+
+# Branding
+BRANDING_PRIMARY_COLOR=${process.env.BRANDING_PRIMARY_COLOR}
+BRANDING_SECONDARY_COLOR=${process.env.BRANDING_SECONDARY_COLOR}
+BRANDING_ACCENT_COLOR=${process.env.BRANDING_ACCENT_COLOR}
+BRANDING_LOGO_URL=${process.env.BRANDING_LOGO_URL}
+BRANDING_FAVICON_URL=${process.env.BRANDING_FAVICON_URL}
+BRANDING_CUSTOM_CSS=${process.env.BRANDING_CUSTOM_CSS}
+
+# Plans Configuration (JSON string)
+PLANS_CONFIG=${JSON.stringify(plans)}
+
+# Stripe Configuration
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+STRIPE_SECRET_KEY=${process.env.STRIPE_SECRET_KEY}
+STRIPE_WEBHOOK_SECRET=${process.env.STRIPE_WEBHOOK_SECRET}
+
+# Stripe Products (JSON string)
+STRIPE_PRODUCTS=${JSON.stringify(stripeProducts)}
+
+# AI Configuration
+AI_CREATOR_ID=${process.env.AI_CREATOR_ID}
+OPENAI_API_KEY=${process.env.OPENAI_API_KEY}
+AI_MODEL=${process.env.AI_MODEL}
+AI_TEMPERATURE=${process.env.AI_TEMPERATURE}
+AI_MAX_TOKENS=${process.env.AI_MAX_TOKENS}
+AI_PERSONALITY_PROMPT=${process.env.AI_PERSONALITY_PROMPT}
+AI_SYSTEM_MESSAGE=${process.env.AI_SYSTEM_MESSAGE}
+
+# Database Configuration
+DATABASE_URL=${process.env.DATABASE_URL}
+
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=${process.env.NEXT_PUBLIC_SUPABASE_URL}
+NEXT_PUBLIC_SUPABASE_ANON_KEY=${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}
+SUPABASE_SERVICE_ROLE_KEY=${process.env.SUPABASE_SERVICE_ROLE_KEY}
+
+# Deployment Configuration
+DEPLOYMENT_DOMAIN=${process.env.DEPLOYMENT_DOMAIN}
+DEPLOYMENT_BASE_URL=${process.env.DEPLOYMENT_BASE_URL}
+NODE_ENV=development
+`;
+}
+
 function updateStripePriceIds() {
   try {
-    // Load current config
-    const config = require('../influencer.config.js');
-    console.log(`📝 Updating Stripe price IDs for: ${config.influencer.displayName}`);
+    // Load config from environment variables
+    const influencerName = process.env.INFLUENCER_DISPLAY_NAME;
+    
+    if (!influencerName) {
+      console.error('❌ Missing INFLUENCER_DISPLAY_NAME environment variable!');
+      console.log('💡 Make sure you have run: npm run migrate:env');
+      process.exit(1);
+    }
+    
+    console.log(`📝 Updating Stripe price IDs for: ${influencerName}`);
     
     // Check if deployment-info.json exists
     const deploymentInfoPath = './deployment-info.json';
@@ -41,11 +109,11 @@ function updateStripePriceIds() {
 
     console.log('\n🔄 Updating plans with real Stripe price IDs:');
     
-    // Update the config plans with real Stripe price IDs
-    const updatedConfig = { ...config };
+    // Parse plans from environment variable
+    const plansConfig = JSON.parse(process.env.PLANS_CONFIG || '[]');
     let updatedCount = 0;
 
-    updatedConfig.plans = config.plans.map(plan => {
+    const updatedPlans = plansConfig.map(plan => {
       if (stripePriceMapping[plan.id] && plan.stripePriceId !== stripePriceMapping[plan.id]) {
         console.log(`   ✅ ${plan.name}: ${plan.stripePriceId} → ${stripePriceMapping[plan.id]}`);
         updatedCount++;
@@ -75,9 +143,10 @@ function updateStripePriceIds() {
 
     // Write the updated config back to file
     if (updatedCount > 0 || deploymentInfo.stripeProducts) {
-      const configContent = `module.exports = ${JSON.stringify(updatedConfig, null, 2)};`;
-      fs.writeFileSync('./influencer.config.js', configContent);
-      console.log(`\n✅ Successfully updated influencer.config.js!`);
+      // Generate new environment file with updated plans
+      const updatedEnvContent = generateUpdatedEnvContent(updatedPlans, deploymentInfo.stripeProducts);
+      fs.writeFileSync('./.env.local', updatedEnvContent);
+      console.log(`\n✅ Successfully updated .env.local!`);
       console.log(`   - Updated ${updatedCount} plan price IDs`);
       console.log(`   - Updated Stripe products mapping`);
       console.log(`   - Configuration is now ready for production`);

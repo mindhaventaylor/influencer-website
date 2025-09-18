@@ -10,6 +10,8 @@
     "lint": "eslint",
     "setup": "node scripts/setup-new-influencer-site.js",
     "setup:complete": "node scripts/setup-complete-system.js",
+    "migrate:env": "node scripts/migrate-to-env.js",
+    "update:scripts": "node scripts/update-all-scripts.js",
     "update:stripe-ids": "node scripts/update-stripe-price-ids.js",
     "create:conversations-table": "node scripts/create-conversations-table.js",
     "fix:missing-users": "node scripts/fix-missing-users.js",

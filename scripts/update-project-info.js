@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+require('dotenv').config({ path: '.env.local' });/usr/bin/env node
+
 // Script to update project information based on influencer.config.js
 const fs = require('fs');
 const path = require('path');
@@ -9,7 +11,15 @@ console.log('🔄 **UPDATING PROJECT INFORMATION**\n');
 function updateProjectInfo() {
   try {
     // Load influencer configuration
-    const config = require('../influencer.config.js');
+    const { loadConfig } = require('./config-loader');
+const { validateEnvironment } = require('./config-loader');
+
+// Validate environment variables
+if (!validateEnvironment()) {
+  process.exit(1);
+}
+
+const config = loadConfig();
     
     console.log(`📝 Updating project for: ${config.influencer.displayName}`);
     
