@@ -58,6 +58,7 @@ export interface InfluencerConfig {
   ai: {
     creator_id: string;
     openaiApiKey: string;
+    apiBearerToken: string;
     model: string;
     temperature: number;
     maxTokens: number;
@@ -115,6 +116,7 @@ function loadConfigFromEnv(): InfluencerConfig {
     ai: {
       creator_id: process.env.AI_CREATOR_ID || fallbackConfig.ai?.creator_id || '',
       openaiApiKey: process.env.OPENAI_API_KEY || fallbackConfig.ai?.openaiApiKey || '',
+      apiBearerToken: process.env.AI_API_BEARER_TOKEN || fallbackConfig.ai?.apiBearerToken || '',
       model: process.env.AI_MODEL || fallbackConfig.ai?.model || 'gpt-4',
       temperature: parseFloat(process.env.AI_TEMPERATURE || fallbackConfig.ai?.temperature || '0.3'),
       maxTokens: parseInt(process.env.AI_MAX_TOKENS || fallbackConfig.ai?.maxTokens || '3000'),
@@ -153,6 +155,9 @@ export const getDeploymentConfig = () => config.deployment;
 // Get influencer database ID for instant access
 export const getInfluencerDatabaseId = () => config.influencer.databaseId;
 
+// Get API bearer token for external API requests
+export const getApiBearerToken = () => config.ai.apiBearerToken;
+
 // Environment variables derived from config
 export const getEnvVars = () => ({
   NEXT_PUBLIC_SUPABASE_URL: config.database.supabase.url,
@@ -163,6 +168,7 @@ export const getEnvVars = () => ({
   STRIPE_SECRET_KEY: config.stripe.secretKey,
   STRIPE_WEBHOOK_SECRET: config.stripe.webhookSecret,
   OPENAI_API_KEY: config.ai.openaiApiKey,
+  AI_API_BEARER_TOKEN: config.ai.apiBearerToken,
   NEXT_PUBLIC_INFLUENCER_ID: config.influencer.id,
   NEXT_PUBLIC_INFLUENCER_NAME: config.influencer.displayName,
   NEXT_PUBLIC_INFLUENCER_HANDLE: config.influencer.handle,

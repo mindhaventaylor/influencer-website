@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Video, Phone, ChevronLeft } from 'lucide-react';
+import { Send, Video, Phone, ChevronLeft, MessageCircle } from 'lucide-react';
 import MessageFormatter from '@/components/ui/MessageFormatter';
 import ChatCache from '@/lib/chatCache';
 import { getUserFriendlyError } from '@/lib/errorMessages';
@@ -29,7 +29,9 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   const clientInfluencer = getClientInfluencerInfo();
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   };
 
   useEffect(() => {
@@ -106,8 +108,20 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   }, [influencerId, userId]);
 
   useEffect(() => {
-    scrollToBottom();
+    // Small delay to ensure DOM is updated
+    setTimeout(() => {
+      scrollToBottom();
+    }, 100);
   }, [messages, isAiReplying]);
+
+  // Auto-scroll when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => {
+        scrollToBottom();
+      }, 50);
+    }
+  }, [messages.length]);
 
   const handleSendMessage = async () => {
     if (newMessage.trim() === '') return;
@@ -181,7 +195,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   return (
     <div className="flex flex-col h-screen-mobile bg-black text-white">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-800">
+      <div className="flex items-center justify-between p-6 border-b border-gray-800 flex-shrink-0">
         <div className="flex items-center space-x-3">
           <button
             onClick={onGoBack}
@@ -222,7 +236,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 pb-24 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4" style={{ paddingBottom: '120px' }}>
         {messages.length === 0 ? (
           // Chat interface for new conversations - more focused on chatting
           <div className="flex items-center justify-center h-full">
@@ -295,27 +309,66 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - Fixed at bottom */}
-      <div className="fixed bottom-20 left-0 right-0 p-6 border-t border-gray-800 bg-black z-30">
-        <div className="flex items-center space-x-3">
-          <Input
-            type="text"
-            placeholder="Type a message..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                handleSendMessage();
-              }
-            }}
-            className="flex-1 p-4 rounded-2xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
-          />
-          <Button 
-            onClick={handleSendMessage} 
-            className="p-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white transition-all duration-200"
+      {/* Input Area */}
+      <div className="flex-shrink-0 border-t border-gray-800 bg-black">
+        <div className="p-6">
+          <div className="flex items-center space-x-3">
+            <Input
+              type="text"
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleSendMessage();
+                }
+              }}
+              className="flex-1 p-4 rounded-2xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
+            />
+            <Button 
+              onClick={handleSendMessage} 
+              className="p-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white transition-all duration-200"
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Chat Bottom Navigation */}
+      <div className="flex-shrink-0 border-t border-gray-800 bg-black">
+        <div className="flex items-center justify-around py-3">
+          <button
+            onClick={onGoBack}
+            className="flex flex-col items-center justify-center py-2 px-3 rounded-lg text-gray-400 hover:text-white transition-colors"
           >
-            <Send className="h-5 w-5" />
-          </Button>
+            <ChevronLeft className="w-6 h-6" />
+            <span className="text-xs mt-1 font-medium">Back</span>
+          </button>
+          
+          <button
+            onClick={() => { setFeatureMessage('Voice calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
+            className="flex flex-col items-center justify-center py-2 px-3 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <Phone className="w-6 h-6" />
+            <span className="text-xs mt-1 font-medium">Call</span>
+          </button>
+          
+          <button
+            onClick={() => { setFeatureMessage('Video calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
+            className="flex flex-col items-center justify-center py-2 px-3 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+          >
+            <Video className="w-6 h-6" />
+            <span className="text-xs mt-1 font-medium">Video</span>
+          </button>
+          
+          <button
+            onClick={() => { setFeatureMessage('More chat features are coming soon!'); setShowFeatureModal(true); }}
+            className="flex flex-col items-center justify-center py-2 px-3 rounded-lg text-gray-400 hover:text-white transition-colors"
+          >
+            <MessageCircle className="w-6 h-6" />
+            <span className="text-xs mt-1 font-medium">More</span>
+          </button>
         </div>
       </div>
 

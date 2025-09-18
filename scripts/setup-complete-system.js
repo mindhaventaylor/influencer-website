@@ -58,6 +58,7 @@ STRIPE_PRODUCTS=${JSON.stringify(config.stripe.products)}
 # AI Configuration
 AI_CREATOR_ID=${config.ai.creator_id}
 OPENAI_API_KEY=${config.ai.openaiApiKey}
+AI_API_BEARER_TOKEN=${config.ai.apiBearerToken}
 AI_MODEL=${config.ai.model}
 AI_TEMPERATURE=${config.ai.temperature}
 AI_MAX_TOKENS=${config.ai.maxTokens}
@@ -117,6 +118,7 @@ STRIPE_PRODUCTS=${JSON.stringify(config.stripe.products)}
 # AI Configuration
 AI_CREATOR_ID=${config.ai.creator_id}
 OPENAI_API_KEY=${config.ai.openaiApiKey}
+AI_API_BEARER_TOKEN=${config.ai.apiBearerToken}
 AI_MODEL=${config.ai.model}
 AI_TEMPERATURE=${config.ai.temperature}
 AI_MAX_TOKENS=${config.ai.maxTokens}

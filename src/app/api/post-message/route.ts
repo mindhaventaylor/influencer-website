@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-import { getInfluencerConfig } from '@/lib/config';
+import { getInfluencerConfig, getApiBearerToken } from '@/lib/config';
 
 // Initialize Supabase client with service role key for server-side operations
 const config = getInfluencerConfig();
@@ -48,16 +48,31 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
     msgs_cnt_by_user: msgsCntByUser,
   };
 
+  const apiBearerToken = getApiBearerToken();
+  console.log('🔑 Using API Bearer Token:', apiBearerToken ? `${apiBearerToken.substring(0, 10)}...` : 'NOT FOUND');
+  
   const response = await fetch('http://influencer-brain-alb-1945743263.us-east-1.elb.amazonaws.com/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiBearerToken}`,
     },
     body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {
-    throw new Error(`Custom API error: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('🚨 External API Error:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorText,
+      url: 'http://influencer-brain-alb-1945743263.us-east-1.elb.amazonaws.com/chat',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiBearerToken ? `${apiBearerToken.substring(0, 10)}...` : 'NOT FOUND'}`,
+      }
+    });
+    throw new Error(`Custom API error: ${response.statusText} (${response.status}) - ${errorText}`);
   }
 
   const data = await response.json();

@@ -418,7 +418,7 @@ export default function Home() {
           </div>
           
           {/* Mobile Navigation - only show when authenticated and not in signup flow or login transition */}
-          {user && !callState.isActive && !isLoggingIn && currentScreen !== "SignUp" && currentScreen !== "OnboardingProfile" && (
+          {user && !callState.isActive && !isLoggingIn && currentScreen !== "SignUp" && currentScreen !== "OnboardingProfile" && currentScreen !== "ChatThread" && (
             <MobileNavigation
               key="mobile-navigation"
               currentScreen={currentScreen}
