@@ -72,13 +72,13 @@ export default function FixUserPage() {
         
         {/* Current User Status */}
         <Card className="bg-gray-900 border-gray-700">
-          <CardHeader>
-            <CardTitle>Current User Status</CardTitle>
-            <CardDescription>
+          <CardHeader className="">
+            <CardTitle className="">Current User Status</CardTitle>
+            <CardDescription className="">
               Check if your current user has a valid UUID
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="">
             {currentUser ? (
               <div className={`p-4 rounded ${isInvalidUserId ? 'bg-red-500/10 border border-red-500' : 'bg-green-500/10 border border-green-500'}`}>
                 <div className="space-y-2">
@@ -107,9 +107,9 @@ export default function FixUserPage() {
 
         {/* Actions */}
         <Card className="bg-gray-900 border-gray-700">
-          <CardHeader>
-            <CardTitle>Fix Actions</CardTitle>
-            <CardDescription>
+          <CardHeader className="">
+            <CardTitle className="">Fix Actions</CardTitle>
+            <CardDescription className="">
               Clear old data and create a new user with proper UUID
             </CardDescription>
           </CardHeader>
@@ -148,8 +148,8 @@ export default function FixUserPage() {
         {/* Next Steps */}
         {currentUser && !isInvalidUserId && (
           <Card className="bg-gray-900 border-gray-700">
-            <CardHeader>
-              <CardTitle>🎉 Ready to Test!</CardTitle>
+            <CardHeader className="">
+              <CardTitle className="">🎉 Ready to Test!</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-gray-300">
               <p>✅ Your user has a valid UUID</p>
