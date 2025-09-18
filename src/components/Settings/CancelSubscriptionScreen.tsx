@@ -46,8 +46,7 @@ export default function CancelSubscriptionScreen({ onGoBack }: CancelSubscriptio
       });
 
       if (response.ok) {
-        // Subscription cancellation successful
-        alert('Your subscription has been cancelled successfully.');
+        // Subscription cancellation successful - redirect back
         onGoBack();
       } else {
         const errorData = await response.json();

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient } from '@supabase/supabase-js';
+import { getInfluencerConfig } from '@/lib/config';
+import { stripe } from '@/lib/stripe';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,8 +14,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user credentials
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    // Get Supabase configuration
+    const config = getInfluencerConfig();
+    const supabaseUrl = config.database.supabase.url;
+    const supabaseServiceKey = config.database.supabase.serviceRoleKey;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
+    // Create service client for admin operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify user credentials using service client
+    const { data: authData, error: authError } = await supabaseAdmin.auth.signInWithPassword({
       email,
       password,
     });
@@ -33,41 +50,47 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
 
-    // Here you would typically integrate with your payment provider (Stripe, etc.)
-    // to cancel the subscription. For now, we'll just log it.
-    
-    // Example Stripe integration (uncomment and configure as needed):
-    /*
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    
-    // Get user's subscription from your database
-    const { data: subscription } = await supabase
-      .from('subscriptions')
-      .select('stripe_subscription_id')
-      .eq('user_id', authData.user.id)
-      .single();
+    const userId = authData.user.id;
 
-    if (subscription?.stripe_subscription_id) {
-      await stripe.subscriptions.cancel(subscription.stripe_subscription_id);
-    }
-    */
+    // Get user's subscriptions from user_subscriptions table
+    const { data: subscriptions, error: subscriptionsError } = await supabaseAdmin
+      .from('user_subscriptions')
+      .select('stripe_subscription_id, id')
+      .eq('user_id', userId);
 
-    // Update subscription status in database
-    const { error: updateError } = await supabase
-      .from('subscriptions')
-      .update({ 
-        status: 'cancelled',
-        cancelled_at: new Date().toISOString(),
-        cancellation_reason: reason
-      })
-      .eq('user_id', authData.user.id);
-
-    if (updateError) {
-      console.error('Error updating subscription status:', updateError);
+    if (subscriptionsError) {
+      console.error('Error fetching user subscriptions:', subscriptionsError);
       return NextResponse.json(
-        { error: 'Failed to cancel subscription' },
+        { error: 'Failed to fetch subscriptions' },
         { status: 500 }
       );
+    }
+
+    // Cancel subscriptions in Stripe and update database
+    for (const subscription of subscriptions || []) {
+      if (subscription.stripe_subscription_id) {
+        try {
+          await stripe.subscriptions.cancel(subscription.stripe_subscription_id);
+          console.log(`Cancelled Stripe subscription: ${subscription.stripe_subscription_id}`);
+        } catch (stripeError) {
+          console.error('Error cancelling Stripe subscription:', stripeError);
+          // Continue with database update even if Stripe fails
+        }
+      }
+
+      // Update subscription status in database
+      const { error: updateError } = await supabaseAdmin
+        .from('user_subscriptions')
+        .update({ 
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancellation_reason: reason
+        })
+        .eq('id', subscription.id);
+
+      if (updateError) {
+        console.error('Error updating subscription status:', updateError);
+      }
     }
 
     return NextResponse.json({ 
