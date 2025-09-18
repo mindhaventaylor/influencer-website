@@ -54,25 +54,24 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
       </div>
 
       <div className="flex-1 flex flex-col justify-center px-6">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-medium mb-8" style={{ color: '#EDEDED' }}>
-            Welcome to Project Taylor
-          </h1>
-          
-          {/* Profile Card */}
-          <div className="w-36 h-36 mx-auto mb-4 rounded-3xl overflow-hidden shadow-lg">
-            <img 
-              src={influencer.avatarUrl} 
-              alt={influencer.displayName}
-              className="w-full h-full object-cover"
-            />
+        <div className="max-w-md mx-auto lg:max-w-lg xl:max-w-xl w-full">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-medium mb-8" style={{ color: '#EDEDED' }}>
+              Welcome to Project Taylor
+            </h1>
+            
+            {/* Profile Card */}
+            <div className="w-36 h-36 mx-auto mb-4 rounded-3xl overflow-hidden shadow-lg">
+              <img 
+                src={influencer.avatarUrl} 
+                alt={influencer.displayName}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            <h2 className="text-lg font-semibold mb-8" style={{ color: '#EDEDED' }}>Sign In</h2>
           </div>
-          
-          <h2 className="text-lg font-semibold mb-8" style={{ color: '#EDEDED' }}>Sign In</h2>
-        </div>
-
-        <div className="w-full max-w-sm mx-auto">
           <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="email" className="block text-xs mb-2" style={{ color: '#B8B8B8' }}>

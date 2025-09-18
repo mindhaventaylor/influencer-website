@@ -35,7 +35,7 @@ export default function IncomingCallScreen({
   };
 
   return (
-    <div className="flex flex-col h-screen-mobile bg-black text-white">
+    <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Background with gradient */}
       <div className="flex-1 relative bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
         {/* Animated background circles */}

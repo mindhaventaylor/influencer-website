@@ -53,7 +53,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <ViewportHeightHandler />
-        <div id="root" className="h-screen-mobile overflow-hidden influencer-branding">
+        <div id="root" className="min-h-screen influencer-branding">
           {children}
         </div>
         <Toaster />

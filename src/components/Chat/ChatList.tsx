@@ -49,7 +49,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen-mobile bg-black text-white">
+      <div className="flex items-center justify-center min-h-screen bg-black text-white">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Loading...</p>
@@ -60,7 +60,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen-mobile bg-black text-white">
+      <div className="flex items-center justify-center min-h-screen bg-black text-white">
         <div className="text-center">
           <p className="text-lg font-semibold mb-2 text-red-400">Error</p>
           <p className="text-sm text-gray-400">{error}</p>
@@ -71,7 +71,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
   
   if (!influencer) {
     return (
-      <div className="flex items-center justify-center h-screen-mobile bg-black text-white">
+      <div className="flex items-center justify-center min-h-screen bg-black text-white">
         <div className="text-center">
           <p className="text-lg font-semibold">No influencer found</p>
         </div>
@@ -80,7 +80,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
   }
 
   return (
-    <div className="flex flex-col h-screen-mobile bg-black text-white">
+    <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-gray-800">
         <div className="flex items-center space-x-3">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -11,8 +11,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ExternalLink, ChevronRight, Bell, Shield, HelpCircle, LogOut, User, MessageCircle } from 'lucide-react';
-import BottomNavigation from '@/components/ui/BottomNavigation';
+import { ExternalLink, ArrowLeft, Trash2, Mail } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SettingsScreenProps {
   onGoToChat: () => void;
@@ -21,6 +21,7 @@ interface SettingsScreenProps {
   onGoToDisclaimer: () => void;
   onGoToPrivacyPolicy: () => void;
   onGoToTermsAndConditions: () => void;
+  onGoBack: () => void;
 }
 
 const SettingsScreen = ({ 
@@ -29,152 +30,267 @@ const SettingsScreen = ({
   onSignOut, 
   onGoToDisclaimer, 
   onGoToPrivacyPolicy, 
-  onGoToTermsAndConditions 
+  onGoToTermsAndConditions,
+  onGoBack
 }: SettingsScreenProps) => {
+  const { user } = useAuth();
+  const [darkMode, setDarkMode] = useState(true);
+  const [dataSharingConsent, setDataSharingConsent] = useState(false);
+  const [personalizationConsent, setPersonalizationConsent] = useState(false);
+  const [isDeletingChatHistory, setIsDeletingChatHistory] = useState(false);
+
+  // Load user preferences on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const response = await fetch(`/api/user/preferences?userId=${user.id}`);
+        if (response.ok) {
+          const { preferences } = await response.json();
+          setDarkMode(preferences.dark_mode);
+          setDataSharingConsent(preferences.data_sharing_consent);
+          setPersonalizationConsent(preferences.personalization_consent);
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+        // Fallback to localStorage
+        const savedDarkMode = localStorage.getItem('darkMode');
+        const savedDataSharing = localStorage.getItem('dataSharingConsent');
+        const savedPersonalization = localStorage.getItem('personalizationConsent');
+        
+        if (savedDarkMode !== null) setDarkMode(JSON.parse(savedDarkMode));
+        if (savedDataSharing !== null) setDataSharingConsent(JSON.parse(savedDataSharing));
+        if (savedPersonalization !== null) setPersonalizationConsent(JSON.parse(savedPersonalization));
+      }
+    };
+
+    loadPreferences();
+  }, [user?.id]);
+
+  // Save preferences when they change
+  const savePreferences = async (preferences: any) => {
+    if (!user?.id) return;
+    
+    try {
+      await fetch('/api/user/preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          preferences,
+        }),
+      });
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      // Fallback to localStorage
+      localStorage.setItem('darkMode', JSON.stringify(preferences.darkMode));
+      localStorage.setItem('dataSharingConsent', JSON.stringify(preferences.dataSharingConsent));
+      localStorage.setItem('personalizationConsent', JSON.stringify(preferences.personalizationConsent));
+    }
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      savePreferences({
+        darkMode,
+        dataSharingConsent,
+        personalizationConsent,
+      });
+    }
+  }, [darkMode, dataSharingConsent, personalizationConsent, user?.id]);
+
+  const handleDeleteChatHistory = async () => {
+    setIsDeletingChatHistory(true);
+    try {
+      const response = await fetch('/api/chat/delete-history', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user?.id }),
+      });
+
+      if (response.ok) {
+        alert('Chat history deleted successfully');
+      } else {
+        alert('Failed to delete chat history');
+      }
+    } catch (error) {
+      console.error('Error deleting chat history:', error);
+      alert('An error occurred while deleting chat history');
+    } finally {
+      setIsDeletingChatHistory(false);
+    }
+  };
+
+  const handleContactUs = () => {
+    // Open email client or contact form
+    window.open('mailto:support@projecttaylor.com?subject=Support Request', '_blank');
+  };
 
   return (
-    <div className="flex flex-col h-screen-mobile bg-black text-white">
-      {/* Header */}
-      <header className="flex items-center p-6 border-b border-gray-800">
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-      </header>
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#0F0F10' }}>
+      {/* Top Navigation */}
+      <div className="flex items-center px-6 py-4" style={{ backgroundColor: '#1B1B1D' }}>
+        <Button 
+          variant="ghost" 
+          onClick={onGoBack} 
+          className="p-2 rounded-xl"
+          style={{ color: '#EDEDED' }}
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <h1 className="text-lg font-medium ml-4" style={{ color: '#EDEDED' }}>Settings</h1>
+      </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-8">
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-white">Quick Actions</h2>
-          <div className="space-y-3">
-            <button 
-              onClick={onGoToChat} 
-              className="w-full flex items-center justify-between p-4 bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <MessageCircle className="w-5 h-5 text-gray-400" />
-                <span className="text-white">Chat</span>
+      <div className="flex-1 overflow-y-auto px-6 py-8" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <div className="max-w-md mx-auto lg:max-w-2xl">
+          {/* Preferences Section */}
+          <div className="mb-8">
+            <h2 className="text-lg font-bold mb-4" style={{ color: '#EDEDED' }}>Preferences</h2>
+            
+            <div className="space-y-4">
+              {/* Chat History */}
+              <div className="flex items-center justify-between py-3">
+                <span style={{ color: '#EDEDED' }}>Chat History</span>
+                <Button
+                  onClick={handleDeleteChatHistory}
+                  disabled={isDeletingChatHistory}
+                  className="px-4 py-2 rounded-full text-sm font-medium"
+                  style={{ 
+                    backgroundColor: '#2C2C2E', 
+                    color: '#EDEDED',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                  }}
+                >
+                  {isDeletingChatHistory ? 'Deleting...' : 'Delete'}
+                </Button>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
 
-            <button 
-              onClick={onGoToProfile} 
-              className="w-full flex items-center justify-between p-4 bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <User className="w-5 h-5 text-gray-400" />
-                <span className="text-white">Profile</span>
+              {/* Dark Mode Toggle */}
+              <div className="flex items-center justify-between py-3">
+                <span style={{ color: '#EDEDED' }}>Dark Mode</span>
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    darkMode ? 'bg-red-500' : 'bg-gray-600'
+                  }`}
+                >
+                  <div
+                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                      darkMode ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
+            </div>
           </div>
-        </div>
 
-        {/* App Settings */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-white">App Settings</h2>
-          <div className="space-y-3">
-            <button className="w-full flex items-center justify-between p-4 bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors">
-              <div className="flex items-center space-x-3">
-                <Bell className="w-5 h-5 text-gray-400" />
-                <span className="text-white">Notifications</span>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-4 bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors">
-              <div className="flex items-center space-x-3">
-                <Shield className="w-5 h-5 text-gray-400" />
-                <span className="text-white">Privacy</span>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-
-            <button className="w-full flex items-center justify-between p-4 bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors">
-              <div className="flex items-center space-x-3">
-                <HelpCircle className="w-5 h-5 text-gray-400" />
-                <span className="text-white">Help & Support</span>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-          </div>
-        </div>
-
-        {/* Legal */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-white">Legal</h2>
-          <div className="space-y-3">
-            <button 
-              onClick={onGoToTermsAndConditions} 
-              className="w-full flex items-center justify-between p-4 bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <ExternalLink className="w-5 h-5 text-gray-400" />
-                <span className="text-white">Terms of Service</span>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-
-            <button 
-              onClick={onGoToPrivacyPolicy} 
-              className="w-full flex items-center justify-between p-4 bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <ExternalLink className="w-5 h-5 text-gray-400" />
-                <span className="text-white">Privacy Policy</span>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-
-            <button 
-              onClick={onGoToDisclaimer} 
-              className="w-full flex items-center justify-between p-4 bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors"
-            >
-              <div className="flex items-center space-x-3">
-                <ExternalLink className="w-5 h-5 text-gray-400" />
-                <span className="text-white">Disclaimer</span>
-              </div>
-              <ChevronRight className="w-5 h-5 text-gray-400" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Log Out Button */}
-      <div className="p-6 border-t border-gray-800">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button 
-              variant="destructive" 
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2"
-            >
-              <LogOut className="w-5 h-5" />
-              <span>Log Out</span>
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent className="bg-gray-900 border border-gray-700">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-white">Are you sure you want to log out?</AlertDialogTitle>
-              <AlertDialogDescription className="text-gray-400">
-                You will be signed out of your account and redirected to the login screen.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="bg-gray-800 hover:bg-gray-700 text-white border-gray-700">
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={onSignOut}
-                className="bg-red-600 hover:bg-red-700 text-white"
+          {/* Support Section */}
+          <div className="mb-8">
+            <h2 className="text-lg font-bold mb-4" style={{ color: '#EDEDED' }}>Support</h2>
+            
+            <div className="space-y-4">
+              <button
+                onClick={handleContactUs}
+                className="flex items-center justify-between py-3 w-full hover:bg-gray-800 rounded-xl transition-colors"
               >
-                Log Out
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                <span style={{ color: '#EDEDED' }}>Contact Us</span>
+                <ExternalLink className="w-5 h-5" style={{ color: '#EDEDED' }} />
+              </button>
+            </div>
+          </div>
+
+          {/* Privacy Section */}
+          <div className="mb-8">
+            <h2 className="text-lg font-bold mb-4" style={{ color: '#EDEDED' }}>Privacy</h2>
+            
+            <div className="space-y-6">
+              {/* Data Sharing Consent */}
+              <div className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 pr-4">
+                    <p className="text-sm" style={{ color: '#A6A6AA' }}>
+                      I consent to Project Taylor selling or sharing my personal information with third-party partners for advertising or similar purposes.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setDataSharingConsent(!dataSharingConsent)}
+                    className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
+                      dataSharingConsent ? 'bg-red-500' : 'bg-gray-600'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                        dataSharingConsent ? 'translate-x-7' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              {/* Personalization Consent */}
+              <div className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 pr-4">
+                    <p className="text-sm" style={{ color: '#A6A6AA' }}>
+                      I consent to Project Taylor processing my information to personalize my experience and improve its AI models.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setPersonalizationConsent(!personalizationConsent)}
+                    className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${
+                      personalizationConsent ? 'bg-red-500' : 'bg-gray-600'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                        personalizationConsent ? 'translate-x-7' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Legal Section */}
+          <div className="mb-8">
+            <h2 className="text-lg font-bold mb-4" style={{ color: '#EDEDED' }}>Legal</h2>
+            
+            <div className="space-y-4">
+              <button
+                onClick={onGoToTermsAndConditions}
+                className="flex items-center justify-between py-3 w-full hover:bg-gray-800 rounded-xl transition-colors"
+              >
+                <span style={{ color: '#EDEDED' }}>Terms of Service</span>
+                <ExternalLink className="w-5 h-5" style={{ color: '#EDEDED' }} />
+              </button>
+
+              <button
+                onClick={onGoToPrivacyPolicy}
+                className="flex items-center justify-between py-3 w-full hover:bg-gray-800 rounded-xl transition-colors"
+              >
+                <span style={{ color: '#EDEDED' }}>Privacy Policy</span>
+                <ExternalLink className="w-5 h-5" style={{ color: '#EDEDED' }} />
+              </button>
+
+              <button
+                onClick={onGoToDisclaimer}
+                className="flex items-center justify-between py-3 w-full hover:bg-gray-800 rounded-xl transition-colors"
+              >
+                <span style={{ color: '#EDEDED' }}>Disclaimer</span>
+                <ExternalLink className="w-5 h-5" style={{ color: '#EDEDED' }} />
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <BottomNavigation />
     </div>
   );
 };

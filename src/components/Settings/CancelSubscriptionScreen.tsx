@@ -3,11 +3,11 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
-interface DeleteAccountScreenProps {
+interface CancelSubscriptionScreenProps {
   onGoBack: () => void;
 }
 
-export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenProps) {
+export default function CancelSubscriptionScreen({ onGoBack }: CancelSubscriptionScreenProps) {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +16,7 @@ export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenPro
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleDeleteAccount = async () => {
+  const handleCancelSubscription = async () => {
     setError(null);
     setIsLoading(true);
 
@@ -33,7 +33,7 @@ export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenPro
     }
 
     try {
-      const response = await fetch('/api/user/delete-account', {
+      const response = await fetch('/api/subscription/cancel', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,16 +46,15 @@ export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenPro
       });
 
       if (response.ok) {
-        // Account deletion successful
-        alert('Your account has been deleted successfully.');
-        // Redirect to sign out or home page
-        window.location.href = '/';
+        // Subscription cancellation successful
+        alert('Your subscription has been cancelled successfully.');
+        onGoBack();
       } else {
         const errorData = await response.json();
-        setError(errorData.error || 'Failed to delete account');
+        setError(errorData.error || 'Failed to cancel subscription');
       }
     } catch (err) {
-      setError('An error occurred while deleting your account');
+      setError('An error occurred while cancelling your subscription');
     } finally {
       setIsLoading(false);
     }
@@ -73,15 +72,15 @@ export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenPro
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-lg font-medium ml-4" style={{ color: '#EDEDED' }}>Delete Account</h1>
+        <h1 className="text-lg font-medium ml-4" style={{ color: '#EDEDED' }}>Cancel Subscription</h1>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 py-8">
         <div className="max-w-md mx-auto lg:max-w-lg xl:max-w-xl w-full">
-          {/* Section Title */}
-          <h2 className="text-sm font-semibold mb-6" style={{ color: '#EDEDED' }}>
-            Account Deletion Request
+          {/* Section Header */}
+          <h2 className="text-lg font-semibold mb-6" style={{ color: '#EDEDED' }}>
+            Subscription Cancellation
           </h2>
 
           {/* Form */}
@@ -140,7 +139,7 @@ export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenPro
           {/* Reason Textarea */}
           <div>
             <label className="block text-sm mb-2" style={{ color: '#B8B8B8' }}>
-              Why are you deleting your account?
+              Why are you canceling your subscription?
             </label>
             <textarea
               value={reason}
@@ -164,9 +163,9 @@ export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenPro
             </div>
           )}
 
-          {/* Delete Account Button */}
+          {/* Cancel Subscription Button */}
           <Button
-            onClick={handleDeleteAccount}
+            onClick={handleCancelSubscription}
             disabled={isLoading}
             className="w-full h-12 rounded-3xl font-semibold"
             style={{ 
@@ -175,7 +174,7 @@ export default function DeleteAccountScreen({ onGoBack }: DeleteAccountScreenPro
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
             }}
           >
-            {isLoading ? 'Deleting Account...' : 'Delete Account'}
+            {isLoading ? 'Cancelling Subscription...' : 'Cancel Subscription'}
           </Button>
           </div>
         </div>

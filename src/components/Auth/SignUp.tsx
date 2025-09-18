@@ -7,6 +7,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import api from '@/api';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import { getClientInfluencerInfo } from '@/lib/clientConfig';
+import OnboardingProfile from './OnboardingProfile';
 
 interface SignUpProps {
   onSignUpSuccess: (user: { id: string; email: string; token: string }) => void;
@@ -15,6 +16,8 @@ interface SignUpProps {
 }
 
 const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
+  const [showProfileCreation, setShowProfileCreation] = useState(false);
+  const [userProfileData, setUserProfileData] = useState<any>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -35,6 +38,19 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
 
   // Consider the form complete when email, password, confirm password, date of birth, and all three consents are provided
   const isFormComplete = email && password && confirmPassword && password === confirmPassword && dob && agreedToTerms && agreedToConsent && agreedToSharing;
+
+  const handleProfileCreation = (profileData: any) => {
+    setUserProfileData(profileData);
+    setShowProfileCreation(false);
+    // Continue with sign up after profile creation
+    handleSignUp();
+  };
+
+  const handleSkipProfile = () => {
+    setShowProfileCreation(false);
+    // Continue with sign up without profile data
+    handleSignUp();
+  };
 
   const handleSignUp = async () => {
     setError(null);
@@ -84,8 +100,8 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
       const { data, error } = await api.signUp({ 
         email, 
         password,
-        username: profileData?.username || '',
-        display_name: profileData?.display_name || ''
+        username: userProfileData?.username || '',
+        display_name: userProfileData?.display_name || ''
       });
       if (error) throw error;
       
@@ -95,7 +111,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
       if (session && user) {
         // User is immediately signed in (email confirmation disabled)
         console.log('✅ Signup successful, user immediately signed in');
-        onSignUpSuccess({ id: user.id, email: user.email, token: session.access_token });
+        onSignUpSuccess({ id: user.id, email: user.email || '', token: session.access_token });
       } else if (user && !session) {
         // User created but needs email confirmation
         console.log('📧 User created, email confirmation required');
@@ -113,6 +129,17 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
     }
   };
 
+  // Show profile creation screen if needed
+  if (showProfileCreation) {
+    return (
+      <OnboardingProfile
+        onNext={handleProfileCreation}
+        onGoBack={() => setShowProfileCreation(false)}
+        onSkip={handleSkipProfile}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0F0F10' }}>
       {/* Top Bar */}
@@ -129,19 +156,18 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
       </div>
 
       <div className="flex-1 flex flex-col justify-center px-6 overflow-y-auto">
-        {/* Hero Section */}
-        <div className="text-center mb-8">
-          <div className="w-36 h-36 mx-auto mb-4 rounded-3xl overflow-hidden shadow-lg">
-            <img 
-              src={influencer.avatarUrl} 
-              alt={influencer.displayName}
-              className="w-full h-full object-cover"
-            />
+        <div className="max-w-md mx-auto lg:max-w-lg xl:max-w-xl w-full">
+          {/* Hero Section */}
+          <div className="text-center mb-8">
+            <div className="w-36 h-36 mx-auto mb-4 rounded-3xl overflow-hidden shadow-lg">
+              <img 
+                src={influencer.avatarUrl} 
+                alt={influencer.displayName}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <h2 className="text-xl font-bold mb-8" style={{ color: '#EDEDED' }}>Welcome to Project Taylor</h2>
           </div>
-          <h2 className="text-xl font-bold mb-8" style={{ color: '#EDEDED' }}>Welcome to Project Taylor</h2>
-        </div>
-
-        <div className="w-full max-w-sm mx-auto">
 
           <div className="space-y-5">
             {/* Social Login Buttons */}
@@ -291,7 +317,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
             )}
 
             <Button
-              onClick={handleSignUp}
+              onClick={() => setShowProfileCreation(true)}
               disabled={!isFormComplete || signupSuccess || isLoading}
               className="w-full h-12 rounded-3xl border-0 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               style={{ 

@@ -9,6 +9,8 @@ import ChatThread from '@/components/Chat/ChatThread';
 import SettingsScreen from '@/components/Settings/SettingsScreen';
 import ProfileScreen from '@/components/Settings/ProfileScreen';
 import DeleteAccountScreen from '@/components/Settings/DeleteAccountScreen';
+import ChangeCredentialsScreen from '@/components/Settings/ChangeCredentialsScreen';
+import CancelSubscriptionScreen from '@/components/Settings/CancelSubscriptionScreen';
 import DisclaimerScreen from '@/components/Settings/DisclaimerScreen';
 import PrivacyPolicyScreen from '@/components/Settings/PrivacyPolicyScreen';
 import TermsAndConditionsScreen from '@/components/Settings/TermsAndConditionsScreen';
@@ -243,6 +245,14 @@ export default function Home() {
     setCurrentScreen("DeleteAccountScreen");
   };
 
+  const handleGoToChangeCredentials = () => {
+    setCurrentScreen("ChangeCredentialsScreen");
+  };
+
+  const handleGoToCancelSubscription = () => {
+    setCurrentScreen("CancelSubscriptionScreen");
+  };
+
   const handleGoToDisclaimer = () => {
     setCurrentScreen("DisclaimerScreen");
   };
@@ -311,7 +321,7 @@ export default function Home() {
       setCurrentScreen("SignIn");
     } else if (currentScreen === "ChatThread" || currentScreen === "SettingsScreen" || currentScreen === "ProfileScreen") {
       setCurrentScreen("ChatList");
-    } else if (currentScreen === "DeleteAccountScreen") {
+    } else if (currentScreen === "DeleteAccountScreen" || currentScreen === "ChangeCredentialsScreen" || currentScreen === "CancelSubscriptionScreen") {
       setCurrentScreen("ProfileScreen");
     } else if (currentScreen === "DisclaimerScreen" || currentScreen === "PrivacyPolicyScreen" || currentScreen === "TermsAndConditionsScreen") {
       setCurrentScreen("SettingsScreen");
@@ -378,13 +388,19 @@ export default function Home() {
       screenComponent = <ChatThread onGoBack={handleGoBack} influencerId={influencerId} userToken={user?.token} userId={user?.id} />;
       break;
     case "SettingsScreen":
-      screenComponent = <SettingsScreen onGoToChat={handleGoToChat} onGoToProfile={handleGoToProfile} onSignOut={handleSignOut} onGoToDisclaimer={handleGoToDisclaimer} onGoToPrivacyPolicy={handleGoToPrivacyPolicy} onGoToTermsAndConditions={handleGoToTermsAndConditions} />;
+      screenComponent = <SettingsScreen onGoToChat={handleGoToChat} onGoToProfile={handleGoToProfile} onSignOut={handleSignOut} onGoToDisclaimer={handleGoToDisclaimer} onGoToPrivacyPolicy={handleGoToPrivacyPolicy} onGoToTermsAndConditions={handleGoToTermsAndConditions} onGoBack={handleGoBack} />;
       break;
     case "ProfileScreen":
-      screenComponent = <ProfileScreen onGoToChat={handleGoToChat} onGoToSettings={handleGoToSettings} onGoToDeleteAccount={handleGoToDeleteAccount} />;
+      screenComponent = <ProfileScreen onEditProfile={handleGoToChangeCredentials} onManageSubscription={handleGoToCancelSubscription} onDeleteAccount={handleGoToDeleteAccount} onSignOut={handleSignOut} />;
       break;
     case "DeleteAccountScreen":
-      screenComponent = <DeleteAccountScreen onGoBack={handleGoBack} onGoToChat={handleGoToChat} onGoToSettings={handleGoToSettings} onGoToProfile={handleGoToProfile} />;
+      screenComponent = <DeleteAccountScreen onGoBack={handleGoBack} />;
+      break;
+    case "ChangeCredentialsScreen":
+      screenComponent = <ChangeCredentialsScreen onGoBack={handleGoBack} />;
+      break;
+    case "CancelSubscriptionScreen":
+      screenComponent = <CancelSubscriptionScreen onGoBack={handleGoBack} />;
       break;
     case "DisclaimerScreen":
       screenComponent = <DisclaimerScreen onGoBack={handleGoBack} onGoToPrivacyPolicy={handleGoToPrivacyPolicy} onGoToTermsAndConditions={handleGoToTermsAndConditions} />;
@@ -401,7 +417,7 @@ export default function Home() {
 
   return (
     <ErrorBoundary>
-      <div className="App h-screen-mobile overflow-hidden bg-background">
+      <div className="App min-h-screen bg-background">
         {/* Call Screen Overlay */}
         {callState.isActive && callState.type && (
           <MobileCallScreen
@@ -412,8 +428,8 @@ export default function Home() {
         )}
         
         {/* Main App Content */}
-        <div className="h-full flex flex-col">
-          <div className="flex-1 overflow-hidden">
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1">
             {screenComponent}
           </div>
           

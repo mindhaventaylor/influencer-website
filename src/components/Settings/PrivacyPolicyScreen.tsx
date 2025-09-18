@@ -4,7 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 
 const PrivacyPolicyScreen = ({ onGoBack }) => {
   return (
-    <div className="flex flex-col h-screen-mobile bg-black text-white">
+    <div className="flex flex-col min-h-screen bg-black text-white">
       <header className="flex items-center p-4 border-b border-gray-800">
         <Button variant="ghost" size="icon" onClick={onGoBack} className="mr-2">
           <ChevronLeft className="h-6 w-6" />

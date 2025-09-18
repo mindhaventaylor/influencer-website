@@ -33,7 +33,7 @@ export default function MobileCallScreen({ callType, onEndCall, onResumeChat }: 
   };
 
   return (
-    <div className="flex flex-col h-screen-mobile bg-black text-white">
+    <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Video/Audio Area */}
       <div className="flex-1 relative bg-gradient-to-b from-gray-900 to-black">
         {callType === 'video' ? (

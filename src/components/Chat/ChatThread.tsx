@@ -183,7 +183,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen-mobile bg-black text-white">
+      <div className="flex items-center justify-center min-h-screen bg-black text-white">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Loading chat...</p>
@@ -193,9 +193,9 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   }
 
   return (
-    <div className="flex flex-col h-screen-mobile bg-black text-white">
+    <div className="flex flex-col h-screen bg-black text-white">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-800 flex-shrink-0">
+      <div className="flex items-center justify-between p-6 border-b border-gray-800 flex-shrink-0 relative z-10">
         <div className="flex items-center space-x-3">
           <button
             onClick={onGoBack}
@@ -236,11 +236,12 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4" style={{ paddingBottom: '120px' }}>
-        {messages.length === 0 ? (
-          // Chat interface for new conversations - more focused on chatting
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center max-w-md">
+      <div className="flex-1 overflow-y-auto p-6 space-y-4" style={{ paddingBottom: '200px' }}>
+        <div className="max-w-4xl mx-auto">
+          {messages.length === 0 ? (
+            // Chat interface for new conversations - more focused on chatting
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center max-w-md">
               <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-red-500 mx-auto mb-6">
                 <img 
                   src={influencer?.avatar_url || clientInfluencer.avatarUrl} 
@@ -307,12 +308,14 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
           </div>
         )}
         <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* Input Area */}
-      <div className="flex-shrink-0 border-t border-gray-800 bg-black">
-        <div className="p-6">
-          <div className="flex items-center space-x-3">
+      <div className="flex-shrink-0 border-t border-gray-800 bg-black relative z-50">
+        <div className="p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center space-x-3">
             <Input
               type="text"
               placeholder="Type a message..."
@@ -331,12 +334,13 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
             >
               <Send className="h-5 w-5" />
             </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Chat Bottom Navigation */}
-      <div className="flex-shrink-0 border-t border-gray-800 bg-black">
+      {/* Chat Bottom Navigation - Hidden on desktop */}
+      <div className="flex-shrink-0 border-t border-gray-800 bg-black xl:hidden relative z-30">
         <div className="flex items-center justify-around py-3">
           <button
             onClick={onGoBack}
