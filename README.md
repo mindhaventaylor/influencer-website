@@ -1,4 +1,4 @@
-# 🎯 Influencer AI Chat Platform
+ # 🎯 Influencer AI Chat Platform
 
 A complete AI chat platform that can be customized for any influencer. Each influencer gets their own branded website with AI chat, subscription plans, and token-based access control.
   
