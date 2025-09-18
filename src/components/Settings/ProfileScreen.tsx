@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronRight, Check, ArrowLeft } from 'lucide-react';
 import { getClientInfluencerInfo } from '@/lib/clientConfig';
 import { useAuth } from '@/hooks/useAuth';
+import PlansModal from '@/components/Payment/PlansModal';
 
 interface ProfileScreenProps {
   onEditProfile: () => void;
@@ -19,6 +20,7 @@ export default function ProfileScreen({
 }: ProfileScreenProps) {
   const { user } = useAuth();
   const influencer = getClientInfluencerInfo();
+  const [showPlansModal, setShowPlansModal] = useState(false);
 
   return (
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#0F0F10' }}>
@@ -66,6 +68,7 @@ export default function ProfileScreen({
             </div>
             
             <Button
+              onClick={() => setShowPlansModal(true)}
               className="w-full h-12 rounded-3xl font-semibold"
               style={{ 
                 backgroundColor: '#2C2C2E', 
@@ -118,6 +121,11 @@ export default function ProfileScreen({
         </div>
       </div>
 
+      {/* Plans Modal */}
+      <PlansModal 
+        isOpen={showPlansModal} 
+        onClose={() => setShowPlansModal(false)} 
+      />
     </div>
   );
 }

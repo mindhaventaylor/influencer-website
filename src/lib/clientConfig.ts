@@ -9,6 +9,7 @@ export interface ClientInfluencerInfo {
   bio: string;
   avatarUrl: string;
   websiteUrl: string;
+  databaseId: string;
   socialMedia: {
     instagram: string;
     twitter: string;
@@ -28,17 +29,18 @@ export interface ClientBranding {
 function loadClientConfig() {
   return {
     influencer: {
-      id: process.env.NEXT_PUBLIC_INFLUENCER_ID || '',
-      name: process.env.NEXT_PUBLIC_INFLUENCER_NAME || '',
-      handle: process.env.NEXT_PUBLIC_INFLUENCER_HANDLE || '',
-      displayName: process.env.NEXT_PUBLIC_INFLUENCER_NAME || '',
-      bio: process.env.NEXT_PUBLIC_INFLUENCER_BIO || '',
+      id: process.env.NEXT_PUBLIC_INFLUENCER_ID || 'New Taylor',
+      name: process.env.NEXT_PUBLIC_INFLUENCER_NAME || 'New Taylor Swifty',
+      handle: process.env.NEXT_PUBLIC_INFLUENCER_HANDLE || 'new taylowswifty',
+      displayName: process.env.NEXT_PUBLIC_INFLUENCER_NAME || 'new Taylor',
+      bio: process.env.NEXT_PUBLIC_INFLUENCER_BIO || 'A warm, songwriting-inspired AI with playful nods to every era.',
       avatarUrl: process.env.NEXT_PUBLIC_INFLUENCER_AVATAR_URL || '/default_avatar.png',
-      websiteUrl: process.env.NEXT_PUBLIC_INFLUENCER_WEBSITE_URL || '',
+      websiteUrl: process.env.NEXT_PUBLIC_INFLUENCER_WEBSITE_URL || 'https://taylor.devopai.net/',
+      databaseId: process.env.NEXT_PUBLIC_INFLUENCER_DATABASE_ID || '850bc937-1f5a-4f65-86e0-1a5254d9d23a',
       socialMedia: {
-        instagram: process.env.NEXT_PUBLIC_INFLUENCER_INSTAGRAM || '',
-        twitter: process.env.NEXT_PUBLIC_INFLUENCER_TWITTER || '',
-        tiktok: process.env.NEXT_PUBLIC_INFLUENCER_TIKTOK || '',
+        instagram: process.env.NEXT_PUBLIC_INFLUENCER_INSTAGRAM || 'https://www.instagram.com/taylorswift/',
+        twitter: process.env.NEXT_PUBLIC_INFLUENCER_TWITTER || 'https://x.com/taylorswift13',
+        tiktok: process.env.NEXT_PUBLIC_INFLUENCER_TIKTOK || 'https://www.tiktok.com/@taylorswift',
       },
     },
     branding: {

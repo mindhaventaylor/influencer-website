@@ -6,9 +6,15 @@ import { config } from '@/lib/config';
 
 export async function POST(request: NextRequest) {
   try {
-    const { planId, influencerId } = await request.json();
+    const requestBody = await request.json();
+    console.log('Received request body:', requestBody);
+    
+    const { planId, influencerId } = requestBody;
+    console.log('Extracted planId:', planId);
+    console.log('Extracted influencerId:', influencerId);
 
     if (!planId || !influencerId) {
+      console.log('Missing fields - planId:', !!planId, 'influencerId:', !!influencerId);
       return NextResponse.json(
         { error: 'Missing required fields: planId, influencerId' },
         { status: 400 }
