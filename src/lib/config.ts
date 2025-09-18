@@ -4,9 +4,13 @@
 // Fallback to config file if environment variables are not set (for development)
 let fallbackConfig: any = {};
 try {
-  fallbackConfig = require('../../influencer.config.js');
+  // Only try to load config file in development environment
+  if (process.env.NODE_ENV === 'development') {
+    fallbackConfig = require('../../influencer.config.js');
+  }
 } catch (error) {
   // Config file not found, will use environment variables only
+  console.log('Config file not found, using environment variables only');
 }
 
 export interface InfluencerConfig {
