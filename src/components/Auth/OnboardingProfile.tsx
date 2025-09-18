@@ -43,18 +43,17 @@ const OnboardingProfile = ({ onNext, onGoBack, onSkip }: OnboardingProfileProps)
   };
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#0F0F10' }}>
+    <div className="flex flex-col min-h-screen bg-background">
       {/* Top Navigation */}
-      <div className="flex items-center px-6 py-4" style={{ backgroundColor: '#1B1B1D' }}>
+      <div className="flex items-center px-6 py-4 bg-card">
         <Button 
           variant="ghost" 
           onClick={onGoBack}
-          className="p-2 rounded-xl"
-          style={{ color: '#EDEDED' }}
+          className="p-2 rounded-xl text-foreground"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-lg font-medium ml-4" style={{ color: '#EDEDED' }}>Create Your Profile</h1>
+        <h1 className="text-lg font-medium ml-4 text-card-foreground">Create Your Profile</h1>
       </div>
 
       {/* Content */}
@@ -70,7 +69,7 @@ const OnboardingProfile = ({ onNext, onGoBack, onSkip }: OnboardingProfileProps)
           </div>
 
           {/* Subtitle */}
-          <h2 className="text-lg font-medium mb-8 text-center" style={{ color: '#EDEDED' }}>
+          <h2 className="text-lg font-medium mb-8 text-center text-foreground">
             Personalize your experience
           </h2>
 
@@ -78,7 +77,7 @@ const OnboardingProfile = ({ onNext, onGoBack, onSkip }: OnboardingProfileProps)
           <div className="space-y-6">
             {/* Display Name */}
             <div>
-              <label className="block text-sm mb-2" style={{ color: '#B8B8B8' }}>
+              <label className="block text-sm mb-2 text-muted-foreground">
                 What should Taylor call you?
               </label>
               <Input
@@ -96,7 +95,7 @@ const OnboardingProfile = ({ onNext, onGoBack, onSkip }: OnboardingProfileProps)
 
             {/* Gender Identity */}
             <div>
-              <label className="block text-sm mb-2" style={{ color: '#B8B8B8' }}>
+              <label className="block text-sm mb-2 text-muted-foreground">
                 What is your gender identity?
               </label>
               <Select value={genderIdentity} onValueChange={setGenderIdentity}>
@@ -124,7 +123,7 @@ const OnboardingProfile = ({ onNext, onGoBack, onSkip }: OnboardingProfileProps)
 
             {/* Pronouns */}
             <div>
-              <label className="block text-sm mb-2" style={{ color: '#B8B8B8' }}>
+              <label className="block text-sm mb-2 text-muted-foreground">
                 What are your preferred pronouns?
               </label>
               <Select value={pronouns} onValueChange={setPronouns}>
@@ -175,8 +174,7 @@ const OnboardingProfile = ({ onNext, onGoBack, onSkip }: OnboardingProfileProps)
             {/* Skip Button */}
             <button
               onClick={onSkip}
-              className="w-full text-center py-3 font-medium transition-colors"
-              style={{ color: '#E84A4A' }}
+              className="w-full text-center py-3 font-medium transition-colors text-destructive"
             >
               Skip
             </button>

@@ -118,16 +118,15 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}>
-      <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" style={{ backgroundColor: '#1B1B1D' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80">
+      <div className="bg-card rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold" style={{ color: '#EDEDED' }}>Choose Your Plan</h2>
+          <h2 className="text-xl font-semibold text-card-foreground">Choose Your Plan</h2>
           <Button
             variant="ghost"
             onClick={onClose}
-            className="p-2 rounded-xl"
-            style={{ color: '#EDEDED' }}
+            className="p-2 rounded-xl text-card-foreground"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -143,8 +142,8 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
         {/* Loading State */}
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin" style={{ color: '#EDEDED' }} />
-            <span className="ml-2" style={{ color: '#EDEDED' }}>Loading plans...</span>
+            <Loader2 className="w-6 h-6 animate-spin text-card-foreground" />
+            <span className="ml-2 text-card-foreground">Loading plans...</span>
           </div>
         ) : (
           <div className="space-y-4">
@@ -153,24 +152,23 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
                 key={plan.id}
                 className={`p-6 rounded-xl border-2 transition-all ${
                   plan.isPopular 
-                    ? 'border-red-500 bg-red-500/5' 
-                    : 'border-gray-700 bg-gray-800'
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border bg-secondary'
                 }`}
-                style={{ backgroundColor: plan.isPopular ? 'rgba(232, 74, 74, 0.05)' : '#232325' }}
               >
                 {/* Plan Header */}
                 <div className="text-center mb-4">
-                  <h3 className="text-lg font-semibold mb-1" style={{ color: '#EDEDED' }}>
+                  <h3 className="text-lg font-semibold mb-1 text-card-foreground">
                     {plan.name}
                   </h3>
-                  <p className="text-sm mb-3" style={{ color: '#A6A6AA' }}>
+                  <p className="text-sm mb-3 text-muted-foreground">
                     {plan.description}
                   </p>
-                  <div className="text-2xl font-bold" style={{ color: '#EDEDED' }}>
+                  <div className="text-2xl font-bold text-card-foreground">
                     {formatPrice(plan.priceCents, plan.currency, plan.interval)}
                   </div>
                   {plan.isPopular && (
-                    <div className="text-xs font-medium mt-2 px-3 py-1 rounded-full inline-block" style={{ backgroundColor: '#E84A4A', color: '#FFFFFF' }}>
+                    <div className="text-xs font-medium mt-2 px-3 py-1 rounded-full inline-block bg-primary text-primary-foreground">
                       Most Popular
                     </div>
                   )}
@@ -180,8 +178,8 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
                 <div className="space-y-2 mb-6">
                   {plan.features.map((feature, index) => (
                     <div key={index} className="flex items-center space-x-3">
-                      <Check className="w-4 h-4 flex-shrink-0" style={{ color: '#EDEDED' }} />
-                      <span className="text-sm" style={{ color: '#EDEDED' }}>{feature}</span>
+                      <Check className="w-4 h-4 flex-shrink-0 text-card-foreground" />
+                      <span className="text-sm text-card-foreground">{feature}</span>
                     </div>
                   ))}
                 </div>
@@ -211,7 +209,7 @@ export default function PlansModal({ isOpen, onClose }: PlansModalProps) {
 
             {plans.length === 0 && !loading && (
               <div className="text-center py-8">
-                <p style={{ color: '#A6A6AA' }}>No plans available at the moment.</p>
+                <p className="text-muted-foreground">No plans available at the moment.</p>
               </div>
             )}
           </div>

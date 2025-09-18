@@ -136,18 +136,17 @@ const SettingsScreen = ({
   };
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#0F0F10' }}>
+    <div className="flex flex-col min-h-screen bg-background">
       {/* Top Navigation */}
-      <div className="flex items-center px-6 py-4" style={{ backgroundColor: '#1B1B1D' }}>
+      <div className="flex items-center px-6 py-4 bg-card">
         <Button 
           variant="ghost" 
           onClick={onGoBack} 
-          className="p-2 rounded-xl"
-          style={{ color: '#EDEDED' }}
+          className="p-2 rounded-xl text-foreground"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-lg font-medium ml-4" style={{ color: '#EDEDED' }}>Settings</h1>
+        <h1 className="text-lg font-medium ml-4 text-card-foreground">Settings</h1>
       </div>
 
       {/* Content */}
@@ -155,21 +154,16 @@ const SettingsScreen = ({
         <div className="max-w-md mx-auto lg:max-w-2xl">
           {/* Preferences Section */}
           <div className="mb-8">
-            <h2 className="text-lg font-bold mb-4" style={{ color: '#EDEDED' }}>Preferences</h2>
+            <h2 className="text-lg font-bold mb-4 text-foreground">Preferences</h2>
             
             <div className="space-y-4">
               {/* Chat History */}
               <div className="flex items-center justify-between py-3">
-                <span style={{ color: '#EDEDED' }}>Chat History</span>
+                <span className="text-foreground">Chat History</span>
                 <Button
                   onClick={handleDeleteChatHistory}
                   disabled={isDeletingChatHistory}
-                  className="px-4 py-2 rounded-full text-sm font-medium"
-                  style={{ 
-                    backgroundColor: '#2C2C2E', 
-                    color: '#EDEDED',
-                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
-                  }}
+                  className="px-4 py-2 rounded-full text-sm font-medium bg-primary text-primary-foreground"
                 >
                   {isDeletingChatHistory ? 'Deleting...' : 'Delete'}
                 </Button>
@@ -185,29 +179,29 @@ const SettingsScreen = ({
 
           {/* Support Section */}
           <div className="mb-8">
-            <h2 className="text-lg font-bold mb-4" style={{ color: '#EDEDED' }}>Support</h2>
+            <h2 className="text-lg font-bold mb-4 text-muted-foreground">Support</h2>
             
             <div className="space-y-4">
               <button
                 onClick={handleContactUs}
-                className="flex items-center justify-between py-3 w-full hover:bg-gray-800 rounded-xl transition-colors"
+                className="flex items-center justify-between py-3 w-full hover:bg-secondary rounded-xl transition-colors"
               >
-                <span style={{ color: '#EDEDED' }}>Contact Us</span>
-                <ExternalLink className="w-5 h-5" style={{ color: '#EDEDED' }} />
+                <span className="text-foreground">Contact Us</span>
+                <ExternalLink className="w-5 h-5" text-muted-foreground />
               </button>
             </div>
           </div>
 
           {/* Privacy Section */}
           <div className="mb-8">
-            <h2 className="text-lg font-bold mb-4" style={{ color: '#EDEDED' }}>Privacy</h2>
+            <h2 className="text-lg font-bold mb-4" text-muted-foreground>Privacy</h2>
             
             <div className="space-y-6">
               {/* Data Sharing Consent */}
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 pr-4">
-                    <p className="text-sm" style={{ color: '#A6A6AA' }}>
+                    <p className="text-sm" text-muted-foreground>
                       I consent to Project Taylor selling or sharing my personal information with third-party partners for advertising or similar purposes.
                     </p>
                   </div>
@@ -230,7 +224,7 @@ const SettingsScreen = ({
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 pr-4">
-                    <p className="text-sm" style={{ color: '#A6A6AA' }}>
+                    <p className="text-sm" text-muted-foreground>
                       I consent to Project Taylor processing my information to personalize my experience and improve its AI models.
                     </p>
                   </div>
@@ -253,31 +247,31 @@ const SettingsScreen = ({
 
           {/* Legal Section */}
           <div className="mb-8">
-            <h2 className="text-lg font-bold mb-4" style={{ color: '#EDEDED' }}>Legal</h2>
+            <h2 className="text-lg font-bold mb-4" text-muted-foreground>Legal</h2>
             
             <div className="space-y-4">
               <button
                 onClick={onGoToTermsAndConditions}
-                className="flex items-center justify-between py-3 w-full hover:bg-gray-800 rounded-xl transition-colors"
+                className="flex items-center justify-between py-3 w-full hover:bg-secondary rounded-xl transition-colors"
               >
-                <span style={{ color: '#EDEDED' }}>Terms of Service</span>
-                <ExternalLink className="w-5 h-5" style={{ color: '#EDEDED' }} />
+                <span text-muted-foreground>Terms of Service</span>
+                <ExternalLink className="w-5 h-5" text-muted-foreground />
               </button>
 
               <button
                 onClick={onGoToPrivacyPolicy}
-                className="flex items-center justify-between py-3 w-full hover:bg-gray-800 rounded-xl transition-colors"
+                className="flex items-center justify-between py-3 w-full hover:bg-secondary rounded-xl transition-colors"
               >
-                <span style={{ color: '#EDEDED' }}>Privacy Policy</span>
-                <ExternalLink className="w-5 h-5" style={{ color: '#EDEDED' }} />
+                <span text-muted-foreground>Privacy Policy</span>
+                <ExternalLink className="w-5 h-5" text-muted-foreground />
               </button>
 
               <button
                 onClick={onGoToDisclaimer}
-                className="flex items-center justify-between py-3 w-full hover:bg-gray-800 rounded-xl transition-colors"
+                className="flex items-center justify-between py-3 w-full hover:bg-secondary rounded-xl transition-colors"
               >
-                <span style={{ color: '#EDEDED' }}>Disclaimer</span>
-                <ExternalLink className="w-5 h-5" style={{ color: '#EDEDED' }} />
+                <span text-muted-foreground>Disclaimer</span>
+                <ExternalLink className="w-5 h-5" text-muted-foreground />
               </button>
             </div>
           </div>

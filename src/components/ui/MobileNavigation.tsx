@@ -32,9 +32,9 @@ export default function MobileNavigation({
     <>
       {/* Call Options Modal */}
       {showCallOptions && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-          <div className="bg-card rounded-2xl p-6 mx-4 w-full max-w-sm">
-            <h3 className="text-lg font-semibold text-center mb-6">Call Options</h3>
+        <div className="fixed inset-0 bg-background/80 z-50 flex items-center justify-center">
+          <div className="bg-card rounded-2xl p-6 mx-4 w-full max-w-sm border border-border">
+            <h3 className="text-lg font-semibold text-center mb-6 text-card-foreground">Call Options</h3>
             <div className="space-y-4">
               <button
                 onClick={() => {
@@ -43,6 +43,7 @@ export default function MobileNavigation({
                   setShowCallOptions(false);
                 }}
                 className="w-full flex items-center justify-center space-x-3 bg-primary text-primary-foreground rounded-xl py-4 px-6 hover:bg-primary/90 transition-colors"
+                style={{ backgroundColor: 'hsl(0 84% 60%)', color: 'hsl(0 0% 100%)' }}
               >
                 <Phone className="w-6 h-6" />
                 <span className="text-lg font-medium">Voice Call</span>
@@ -54,6 +55,7 @@ export default function MobileNavigation({
                   setShowCallOptions(false);
                 }}
                 className="w-full flex items-center justify-center space-x-3 bg-primary text-primary-foreground rounded-xl py-4 px-6 hover:bg-primary/90 transition-colors"
+                style={{ backgroundColor: 'hsl(0 84% 60%)', color: 'hsl(0 0% 100%)' }}
               >
                 <Video className="w-6 h-6" />
                 <span className="text-lg font-medium">Video Call</span>
@@ -61,6 +63,7 @@ export default function MobileNavigation({
               <button
                 onClick={() => setShowCallOptions(false)}
                 className="w-full bg-secondary text-secondary-foreground rounded-xl py-3 px-6 hover:bg-secondary/80 transition-colors"
+                style={{ backgroundColor: 'hsl(0 0% 90%)', color: 'hsl(0 0% 0%)' }}
               >
                 Cancel
               </button>

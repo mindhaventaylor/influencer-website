@@ -153,7 +153,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
             />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">{influencer.display_name || clientInfluencer.displayName}</h1>
+            <h1 className="text-xl font-bold text-foreground">{influencer.display_name || clientInfluencer.displayName}</h1>
             <p className="text-sm text-muted-foreground">
               {influencer.is_active ? 'Online' : 'Offline'}
             </p>
@@ -187,7 +187,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
         </div>
         
         <div className="text-center">
-          <h2 className="text-3xl font-bold mb-2 text-white">{influencer.display_name || clientInfluencer.displayName}</h2>
+          <h2 className="text-3xl font-bold mb-2 text-foreground">{influencer.display_name || clientInfluencer.displayName}</h2>
           <p className="text-muted-foreground text-lg">
             {influencer.is_active ? 'Ready to chat' : 'Currently unavailable'}
           </p>
@@ -205,7 +205,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
         <div className="flex space-x-4 w-full max-w-xs">
           <Button
             variant="outline"
-            className="flex-1 p-3 rounded-xl border-gray-700 text-gray-300 hover:bg-gray-800"
+            className="flex-1 p-3 rounded-xl border-border text-muted-foreground hover:bg-secondary"
             onClick={onGoToProfile}
           >
             <User className="w-4 h-4 mr-2" />
@@ -213,7 +213,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
           </Button>
           <Button
             variant="outline"
-            className="flex-1 p-3 rounded-xl border-gray-700 text-gray-300 hover:bg-gray-800"
+            className="flex-1 p-3 rounded-xl border-border text-muted-foreground hover:bg-secondary"
             onClick={onGoToSettings}
           >
             <Settings className="w-4 h-4 mr-2" />

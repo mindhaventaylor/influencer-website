@@ -310,24 +310,18 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
             
             {error && (
               <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                {typeof error === 'string' ? error : error.message || 'An error occurred'}
+                {typeof error === 'string' ? error : 'An error occurred'}
               </div>
             )}
 
             <Button
               onClick={() => setShowProfileCreation(true)}
               disabled={!isFormComplete || signupSuccess || isLoading}
-              className="w-full h-12 rounded-3xl border-0 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              style={{ 
-                backgroundColor: '#2C2C2E',
-                borderRadius: '24px',
-                color: '#EDEDED',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
-              }}
+              className="w-full h-12 rounded-3xl border-0 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-foreground mr-2"></div>
                   Creating Account...
                 </div>
               ) : signupSuccess ? (
@@ -472,13 +466,13 @@ function DatePickerPopup({ month, day, year, onMonthChange, onDayChange, onYearC
         <Button 
           variant="outline" 
           onClick={onCancel}
-          className="px-4 py-2 rounded-lg border-gray-700 text-gray-300 hover:bg-gray-800"
+          className="px-4 py-2 rounded-lg border-border text-muted-foreground hover:bg-secondary"
         >
           Cancel
         </Button>
         <Button 
           onClick={onSet}
-          className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
+          className="px-4 py-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           Set
         </Button>

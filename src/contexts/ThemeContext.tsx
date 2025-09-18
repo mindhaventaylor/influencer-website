@@ -17,17 +17,19 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as Theme;
-    if (savedTheme) {
+    if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
       setThemeState(savedTheme);
-    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-      setThemeState('light');
+    } else {
+      // Always default to dark theme if no saved preference or invalid value
+      setThemeState('dark');
+      localStorage.setItem('theme', 'dark');
     }
+    // Always default to dark theme, ignore system preference
   }, []);
 
   useEffect(() => {
     document.documentElement.className = theme;
     localStorage.setItem('theme', theme);
-    console.log('🎨 Theme changed to:', theme, 'HTML class:', document.documentElement.className);
   }, [theme]);
 
   const toggleTheme = () => {

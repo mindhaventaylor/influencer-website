@@ -356,9 +356,9 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   }
 
   return (
-    <div className="flex flex-col h-screen bg-black text-white">
+    <div className="flex flex-col h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-800 flex-shrink-0 relative z-10">
+      <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0 relative z-10">
         <div className="flex items-center space-x-3">
           <button
             onClick={onGoBack}
@@ -524,12 +524,13 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
               }}
               className="flex-1 p-4 rounded-2xl bg-input border border-border text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
             />
-            <Button 
+            <button 
               onClick={handleSendMessage} 
               className="p-4 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200"
+              style={{ backgroundColor: 'hsl(0 84% 60%)', color: 'hsl(0 0% 100%)' }}
             >
               <Send className="h-5 w-5" />
-            </Button>
+            </button>
             </div>
           </div>
         </div>
@@ -583,6 +584,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
               <button 
                 onClick={() => setShowFeatureModal(false)} 
                 className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
+                style={{ backgroundColor: 'hsl(0 84% 60%)', color: 'hsl(0 0% 100%)' }}
               >
                 OK
               </button>
@@ -611,6 +613,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
               <button 
                 onClick={() => setShowProfileModal(false)} 
                 className="px-6 py-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors"
+                style={{ backgroundColor: 'hsl(0 84% 60%)', color: 'hsl(0 0% 100%)' }}
               >
                 Close
               </button>
