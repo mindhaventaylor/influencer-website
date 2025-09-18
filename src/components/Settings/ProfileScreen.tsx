@@ -175,7 +175,13 @@ export default function ProfileScreen({
         {/* Token Balance */}
         <div className="bg-gray-900 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-4 text-white">Token Balance</h2>
-          <TokenBalance />
+          {user?.id ? (
+            <TokenBalance userId={user.id} influencerId={influencer.id} />
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-gray-400">Please sign in to view your token balance</p>
+            </div>
+          )}
         </div>
 
         {/* Account Settings */}

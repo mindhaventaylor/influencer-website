@@ -20,12 +20,8 @@ export async function GET(request: NextRequest) {
         p.features,
         p.is_active,
         p.stripe_price_id,
-        p.stripe_product_id,
-        p.access_level,
-        i.handle as influencer_handle,
-        i.display_name as influencer_name
+        p.stripe_product_id
       FROM plans p
-      JOIN influencers i ON p.influencer_id = i.id
       WHERE p.is_active = true
     `;
 
@@ -42,12 +38,8 @@ export async function GET(request: NextRequest) {
           p.features,
           p.is_active,
           p.stripe_price_id,
-          p.stripe_product_id,
-          p.access_level,
-          i.handle as influencer_handle,
-          i.display_name as influencer_name
+          p.stripe_product_id
         FROM plans p
-        JOIN influencers i ON p.influencer_id = i.id
         WHERE p.is_active = true AND p.influencer_id = ${influencerId}
       `;
     }
@@ -67,10 +59,10 @@ export async function GET(request: NextRequest) {
       isActive: plan.is_active,
       stripePriceId: plan.stripe_price_id,
       stripeProductId: plan.stripe_product_id,
-      accessLevel: plan.access_level || 'basic',
-      isPopular: plan.access_level === 'premium',
-      influencerHandle: plan.influencer_handle,
-      influencerName: plan.influencer_name
+      accessLevel: 'basic', // Default access level since column doesn't exist
+      isPopular: false, // Default to false since we can't determine from access_level
+      influencerHandle: '', // Default empty since column doesn't exist
+      influencerName: 'Influencer' // Default name since column doesn't exist
     }));
 
     return NextResponse.json({ 

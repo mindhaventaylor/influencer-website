@@ -361,7 +361,7 @@ export default function Home() {
   let screenComponent;
   switch (currentScreen) {
     case "SignIn":
-      screenComponent = <SignIn onSignInSuccess={handleSignInSuccess} onGoToSignUp={() => setCurrentScreen("OnboardingProfile")} />;
+      screenComponent = <SignIn onSignInSuccess={handleSignInSuccess} onSwitchToSignUp={() => setCurrentScreen("SignUp")} />;
       break;
     case "SignUp":
       screenComponent = <SignUp onSignUpSuccess={handleSignUpSuccess} onGoBack={handleGoBack} profileData={profileData} />;
@@ -396,7 +396,7 @@ export default function Home() {
       screenComponent = <TermsAndConditionsScreen onGoBack={handleGoBack} onGoToPrivacyPolicy={handleGoToPrivacyPolicy} />;
       break;
     default:
-      screenComponent = <SignIn onSignInSuccess={handleSignInSuccess} onGoToSignUp={() => setCurrentScreen("OnboardingProfile")} />;
+      screenComponent = <SignIn onSignInSuccess={handleSignInSuccess} onSwitchToSignUp={() => setCurrentScreen("SignUp")} />;
   }
 
   return (
