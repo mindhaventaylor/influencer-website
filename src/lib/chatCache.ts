@@ -86,7 +86,7 @@ export const ChatCache = {
     return messagesByThreadId.get(key) || null;
   },
 
-  async getThread(influencerId: string, userId: string, limit = 10): Promise<Message[]> {
+  async getThread(influencerId: string, userId: string, limit = 5): Promise<Message[]> {
     const key = makeThreadKey(influencerId, userId);
     if (messagesByThreadId.has(key)) {
       return messagesByThreadId.get(key)!;

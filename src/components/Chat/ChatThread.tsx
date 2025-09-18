@@ -26,6 +26,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isOptimisticUpdateRef = useRef(false);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [featureMessage, setFeatureMessage] = useState('');
 
@@ -131,9 +132,11 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
         
         if (resolvedInfluencerId) {
           unsubscribe = ChatCache.subscribeThread(resolvedInfluencerId, userId, (msgs) => {
-            if (mounted) {
+            if (mounted && !isOptimisticUpdateRef.current) {
               console.log('🔄 Received cache update:', msgs.length, 'messages');
               setMessages(msgs);
+            } else if (mounted && isOptimisticUpdateRef.current) {
+              console.log('🔄 Skipping cache update during optimistic update');
             }
           });
         }
@@ -190,16 +193,22 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
       is_temp: true // Mark as temporary for identification
     };
     
-    // 🚀 OPTIMISTIC UPDATE: Show user message immediately
+    // 🚀 OPTIMISTIC UPDATE: Show user message immediately in local state FIRST
     console.log('🚀 Adding optimistic user message:', optimisticUserMessage);
-    ChatCache.appendToThread(resolvedInfluencerId, userId, optimisticUserMessage);
+    isOptimisticUpdateRef.current = true;
     
-    // Also update local state immediately for instant UI update
-    // 🚀 FIX: Prevent duplicates by checking if message already exists
     setMessages(prev => {
       const exists = prev.some(msg => msg.id === optimisticUserMessage.id);
       return exists ? prev : [...prev, optimisticUserMessage];
     });
+    
+    // Then update cache (which will trigger subscription updates)
+    ChatCache.appendToThread(resolvedInfluencerId, userId, optimisticUserMessage);
+    
+    // Reset optimistic update flag after a short delay
+    setTimeout(() => {
+      isOptimisticUpdateRef.current = false;
+    }, 100);
     
     setIsAiReplying(true);
 
