@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import SignIn from '../components/Auth/SignIn';
-import SignUp from '../components/Auth/SignUp';
-import OnboardingProfile from '../components/Auth/OnboardingProfile';
+import SignIn from '@/components/Auth/SignIn';
+import SignUp from '@/components/Auth/SignUp';
+import OnboardingProfile from '@/components/Auth/OnboardingProfile';
 import ChatList from '@/components/Chat/ChatList';
 import ChatThread from '@/components/Chat/ChatThread';
 import SettingsScreen from '@/components/Settings/SettingsScreen';
