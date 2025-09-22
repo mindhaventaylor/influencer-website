@@ -29,7 +29,6 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
   const [pickerYear, setPickerYear] = useState(new Date().getFullYear() - 18);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToConsent, setAgreedToConsent] = useState(false);
-  const [agreedToSharing, setAgreedToSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -152,8 +151,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
     dob && 
     isValidDate(dob) && 
     agreedToTerms && 
-    agreedToConsent && 
-    agreedToSharing;
+    agreedToConsent;
 
   const handleProfileCreation = (profileData: any) => {
     setUserProfileData(profileData);
@@ -202,11 +200,6 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
     }
     if (!agreedToConsent) {
       setError('You must consent to processing your information.');
-      setIsLoading(false);
-      return;
-    }
-    if (!agreedToSharing) {
-      setError('You must consent to sharing your information.');
       setIsLoading(false);
       return;
     }
@@ -540,22 +533,6 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold" style={{ color: '#EDEDED' }}>Sharing of Personal Information</h3>
-                <div className="flex items-start space-x-3">
-                  <input
-                    type="checkbox"
-                    id="sharing"
-                    checked={agreedToSharing}
-                    onChange={(e) => setAgreedToSharing(e.target.checked)}
-                    className="mt-1 w-4 h-4 rounded border-2"
-                    style={{ borderColor: '#8A8A8F', backgroundColor: agreedToSharing ? '#E84A4A' : 'transparent' }}
-                  />
-                  <label htmlFor="sharing" className="text-xs leading-relaxed" style={{ color: '#A6A6AA' }}>
-                    I consent to {influencer.displayName} selling or sharing my personal information with third-party partners for advertising or similar purposes.
-                  </label>
-                </div>
-              </div>
             </div>
           </div>
 

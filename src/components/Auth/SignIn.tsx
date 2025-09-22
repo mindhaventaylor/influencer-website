@@ -52,7 +52,7 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
             </h1>
             
             {/* Profile Card */}
-            <div className="w-36 h-36 mx-auto mb-4 rounded-3xl overflow-hidden shadow-lg">
+            <div className="w-36 h-36 mx-auto mb-4 rounded-3xl overflow-hidden shadow-lg border-4 border-red-500">
               <img 
                 src={influencer.avatarUrl} 
                 alt={influencer.displayName}
