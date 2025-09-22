@@ -11,10 +11,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ExternalLink, ArrowLeft, Trash2, Mail } from 'lucide-react';
+import { ExternalLink, ArrowLeft, Trash2, Mail, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import { useTheme } from '@/contexts/ThemeContext';
+import { filterDOMProps } from '@/lib/utils';
+import { getClientInfluencerInfo } from '@/lib/clientConfig';
 
 interface SettingsScreenProps {
   onGoToChat: () => void;
@@ -37,6 +39,7 @@ const SettingsScreen = ({
 }: SettingsScreenProps) => {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const influencer = getClientInfluencerInfo();
   const [dataSharingConsent, setDataSharingConsent] = useState(false);
   const [personalizationConsent, setPersonalizationConsent] = useState(false);
   const [isDeletingChatHistory, setIsDeletingChatHistory] = useState(false);
@@ -132,7 +135,13 @@ const SettingsScreen = ({
 
   const handleContactUs = () => {
     // Open email client or contact form
-    window.open('mailto:support@projecttaylor.com?subject=Support Request', '_blank');
+    window.open(`mailto:support@${influencer.handle.toLowerCase()}.com?subject=Support Request`, '_blank');
+  };
+
+  // Safe wrapper for ExternalLink to prevent CSS class names from being passed as boolean props
+  const SafeExternalLink = ({ className, ...props }: { className?: string; [key: string]: any }) => {
+    const safeProps = filterDOMProps(props);
+    return <ExternalLink className={className} {...safeProps} />;
   };
 
   return (
@@ -174,6 +183,19 @@ const SettingsScreen = ({
                 <span className="text-foreground">Theme</span>
                 <ThemeToggle size="sm" />
               </div>
+
+              {/* Sign Out */}
+              <div className="flex items-center justify-between py-3">
+                <span className="text-foreground">Account</span>
+                <Button
+                  onClick={onSignOut}
+                  variant="outline"
+                  className="px-4 py-2 rounded-full text-sm font-medium border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -187,22 +209,22 @@ const SettingsScreen = ({
                 className="flex items-center justify-between py-3 w-full hover:bg-secondary rounded-xl transition-colors"
               >
                 <span className="text-foreground">Contact Us</span>
-                <ExternalLink className="w-5 h-5 text-muted-foreground" />
+                <SafeExternalLink className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
           </div>
 
           {/* Privacy Section */}
           <div className="mb-8">
-            <h2 className="text-lg font-bold mb-4" text-muted-foreground>Privacy</h2>
+            <h2 className="text-lg font-bold mb-4 text-muted-foreground">Privacy</h2>
             
             <div className="space-y-6">
               {/* Data Sharing Consent */}
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 pr-4">
-                    <p className="text-sm" text-muted-foreground>
-                      I consent to Project Taylor selling or sharing my personal information with third-party partners for advertising or similar purposes.
+                    <p className="text-sm text-muted-foreground">
+                      I consent to {influencer.displayName} selling or sharing my personal information with third-party partners for advertising or similar purposes.
                     </p>
                   </div>
                   <button
@@ -224,8 +246,8 @@ const SettingsScreen = ({
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 pr-4">
-                    <p className="text-sm" text-muted-foreground>
-                      I consent to Project Taylor processing my information to personalize my experience and improve its AI models.
+                    <p className="text-sm text-muted-foreground">
+                      I consent to {influencer.displayName} processing my information to personalize my experience and improve its AI models.
                     </p>
                   </div>
                   <button
@@ -247,31 +269,31 @@ const SettingsScreen = ({
 
           {/* Legal Section */}
           <div className="mb-8">
-            <h2 className="text-lg font-bold mb-4" text-muted-foreground>Legal</h2>
+            <h2 className="text-lg font-bold mb-4 text-muted-foreground">Legal</h2>
             
             <div className="space-y-4">
               <button
                 onClick={onGoToTermsAndConditions}
                 className="flex items-center justify-between py-3 w-full hover:bg-secondary rounded-xl transition-colors"
               >
-                <span text-muted-foreground>Terms of Service</span>
-                <ExternalLink className="w-5 h-5" text-muted-foreground />
+                <span className="text-muted-foreground">Terms of Service</span>
+                <SafeExternalLink className="w-5 h-5 text-muted-foreground" />
               </button>
 
               <button
                 onClick={onGoToPrivacyPolicy}
                 className="flex items-center justify-between py-3 w-full hover:bg-secondary rounded-xl transition-colors"
               >
-                <span text-muted-foreground>Privacy Policy</span>
-                <ExternalLink className="w-5 h-5" text-muted-foreground />
+                <span className="text-muted-foreground">Privacy Policy</span>
+                <SafeExternalLink className="w-5 h-5 text-muted-foreground" />
               </button>
 
               <button
                 onClick={onGoToDisclaimer}
                 className="flex items-center justify-between py-3 w-full hover:bg-secondary rounded-xl transition-colors"
               >
-                <span text-muted-foreground>Disclaimer</span>
-                <ExternalLink className="w-5 h-5" text-muted-foreground />
+                <span className="text-muted-foreground">Disclaimer</span>
+                <SafeExternalLink className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
           </div>

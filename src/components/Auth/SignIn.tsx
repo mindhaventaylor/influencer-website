@@ -48,7 +48,7 @@ export default function SignIn({ onSignInSuccess, onSwitchToSignUp }: SignInProp
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-medium mb-8 text-foreground">
-              Welcome to Project Taylor
+              Welcome to {influencer.displayName}
             </h1>
             
             {/* Profile Card */}

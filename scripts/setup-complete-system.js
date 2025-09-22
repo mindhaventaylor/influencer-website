@@ -36,6 +36,18 @@ INFLUENCER_INSTAGRAM=${config.influencer.socialMedia.instagram}
 INFLUENCER_TWITTER=${config.influencer.socialMedia.twitter}
 INFLUENCER_TIKTOK=${config.influencer.socialMedia.tiktok}
 
+# Public Influencer Information (for frontend)
+NEXT_PUBLIC_INFLUENCER_ID=${config.influencer.id}
+NEXT_PUBLIC_INFLUENCER_NAME=${config.influencer.name}
+NEXT_PUBLIC_INFLUENCER_HANDLE=${config.influencer.handle}
+NEXT_PUBLIC_INFLUENCER_DISPLAY_NAME=${config.influencer.displayName}
+NEXT_PUBLIC_INFLUENCER_BIO=${config.influencer.bio}
+NEXT_PUBLIC_INFLUENCER_AVATAR_URL=${config.influencer.avatarUrl}
+NEXT_PUBLIC_INFLUENCER_WEBSITE_URL=${config.influencer.websiteUrl}
+NEXT_PUBLIC_INFLUENCER_INSTAGRAM=${config.influencer.socialMedia.instagram}
+NEXT_PUBLIC_INFLUENCER_TWITTER=${config.influencer.socialMedia.twitter}
+NEXT_PUBLIC_INFLUENCER_TIKTOK=${config.influencer.socialMedia.tiktok}
+
 # Branding
 BRANDING_PRIMARY_COLOR=${config.branding.primaryColor}
 BRANDING_SECONDARY_COLOR=${config.branding.secondaryColor}
@@ -95,6 +107,18 @@ INFLUENCER_DATABASE_ID=${config.influencer.databaseId || ''}
 INFLUENCER_INSTAGRAM=${config.influencer.socialMedia.instagram}
 INFLUENCER_TWITTER=${config.influencer.socialMedia.twitter}
 INFLUENCER_TIKTOK=${config.influencer.socialMedia.tiktok}
+
+# Public Influencer Information (for frontend)
+NEXT_PUBLIC_INFLUENCER_ID=${config.influencer.id}
+NEXT_PUBLIC_INFLUENCER_NAME=${config.influencer.name}
+NEXT_PUBLIC_INFLUENCER_HANDLE=${config.influencer.handle}
+NEXT_PUBLIC_INFLUENCER_DISPLAY_NAME=${config.influencer.displayName}
+NEXT_PUBLIC_INFLUENCER_BIO=${config.influencer.bio}
+NEXT_PUBLIC_INFLUENCER_AVATAR_URL=${config.influencer.avatarUrl}
+NEXT_PUBLIC_INFLUENCER_WEBSITE_URL=${config.influencer.websiteUrl}
+NEXT_PUBLIC_INFLUENCER_INSTAGRAM=${config.influencer.socialMedia.instagram}
+NEXT_PUBLIC_INFLUENCER_TWITTER=${config.influencer.socialMedia.twitter}
+NEXT_PUBLIC_INFLUENCER_TIKTOK=${config.influencer.socialMedia.tiktok}
 
 # Branding
 BRANDING_PRIMARY_COLOR=${config.branding.primaryColor}

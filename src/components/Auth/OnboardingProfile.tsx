@@ -78,7 +78,7 @@ const OnboardingProfile = ({ onNext, onGoBack, onSkip }: OnboardingProfileProps)
             {/* Display Name */}
             <div>
               <label className="block text-sm mb-2 text-muted-foreground">
-                What should Taylor call you?
+                What should {influencer.displayName} call you?
               </label>
               <Input
                 type="text"

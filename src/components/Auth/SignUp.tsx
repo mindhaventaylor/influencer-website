@@ -124,6 +124,25 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
     return false;
   };
 
+  // Function to sync picker state with typed input
+  const syncPickerWithInput = (dateString: string) => {
+    if (dateString && dateString.length === 10) {
+      const parts = dateString.split('/');
+      if (parts.length === 3) {
+        const month = parseInt(parts[0]);
+        const day = parseInt(parts[1]);
+        const year = parseInt(parts[2]);
+        
+        // Only update if the parsed values are valid
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900) {
+          setPickerMonth(month);
+          setPickerDay(day);
+          setPickerYear(year);
+        }
+      }
+    }
+  };
+
   // Consider the form complete when all fields are valid
   const isFormComplete = email && 
     password && 
@@ -281,7 +300,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                 className="w-full h-full object-cover"
               />
             </div>
-            <h2 className="text-xl font-bold mb-8" style={{ color: '#EDEDED' }}>Welcome to Project Taylor</h2>
+            <h2 className="text-xl font-bold mb-8" style={{ color: '#EDEDED' }}>Welcome to {influencer.displayName}</h2>
           </div>
 
           <div className="space-y-5">
@@ -406,8 +425,15 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                     const value = e.target.value;
                     const formatted = validateAndFormatDate(value);
                     setDob(formatted);
+                    
+                    // Sync the picker with the typed input
+                    syncPickerWithInput(formatted);
                   }}
-                  onClick={() => setShowDatePicker(true)}
+                  onClick={() => {
+                    // Sync picker with current input before showing
+                    syncPickerWithInput(dob);
+                    setShowDatePicker(true);
+                  }}
                   className="w-full h-11 px-4 rounded-2xl border-0 text-white cursor-text transition-all"
                   style={{ 
                     backgroundColor: '#232325',
@@ -460,7 +486,11 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
             <Button
               onClick={() => setShowProfileCreation(true)}
               disabled={!isFormComplete || signupSuccess || isLoading}
-              className="w-full h-12 rounded-3xl border-0 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 bg-primary text-primary-foreground hover:bg-primary/90"
+              className={`w-full h-12 rounded-3xl border-0 font-semibold text-lg disabled:cursor-not-allowed transition-all duration-200 ${
+                !isFormComplete || signupSuccess || isLoading
+                  ? 'bg-red-400 text-white' // Greyed-out red when disabled
+                  : 'bg-red-600 text-white hover:bg-red-700' // Bright red when enabled
+              }`}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -486,7 +516,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                   style={{ borderColor: '#8A8A8F', backgroundColor: agreedToTerms ? '#E84A4A' : 'transparent' }}
                 />
                 <label htmlFor="terms" className="text-xs leading-relaxed" style={{ color: '#A6A6AA' }}>
-                  I have read and agree to Project Taylor's{' '}
+                  I have read and agree to {influencer.displayName}'s{' '}
                   <a href="#" className="underline" style={{ color: '#E84A4A' }}>Terms & Conditions</a>,{' '}
                   <a href="#" className="underline" style={{ color: '#E84A4A' }}>Privacy Policy</a>, and{' '}
                   <a href="#" className="underline" style={{ color: '#E84A4A' }}>Disclaimer</a>.
@@ -505,7 +535,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                     style={{ borderColor: '#8A8A8F', backgroundColor: agreedToConsent ? '#E84A4A' : 'transparent' }}
                   />
                   <label htmlFor="consent" className="text-xs leading-relaxed" style={{ color: '#A6A6AA' }}>
-                    I consent to Project Taylor processing my information to personalize my experience and improve its AI models.
+                    I consent to {influencer.displayName} processing my information to personalize my experience and improve its AI models.
                   </label>
                 </div>
               </div>
@@ -522,7 +552,7 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                     style={{ borderColor: '#8A8A8F', backgroundColor: agreedToSharing ? '#E84A4A' : 'transparent' }}
                   />
                   <label htmlFor="sharing" className="text-xs leading-relaxed" style={{ color: '#A6A6AA' }}>
-                    I consent to Project Taylor selling or sharing my personal information with third-party partners for advertising or similar purposes.
+                    I consent to {influencer.displayName} selling or sharing my personal information with third-party partners for advertising or similar purposes.
                   </label>
                 </div>
               </div>

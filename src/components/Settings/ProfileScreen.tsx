@@ -46,7 +46,7 @@ export default function ProfileScreen({
             </h2>
             <p className="text-sm mb-4 text-muted-foreground">Premium Member</p>
             
-            <h3 className="text-2xl font-bold mb-6 text-card-foreground">TaylorAI Plus</h3>
+            <h3 className="text-2xl font-bold mb-6 text-card-foreground">{influencer.displayName} Plus</h3>
             
             <div className="space-y-3 mb-8">
               <div className="flex items-center justify-center space-x-3">
@@ -63,7 +63,7 @@ export default function ProfileScreen({
               </div>
               <div className="flex items-center justify-center space-x-3">
                 <Check className="w-5 h-5 text-card-foreground" />
-                <span className="text-card-foreground">$4.99 / Month</span>
+                <span className="text-card-foreground">$15 / Month</span>
               </div>
             </div>
             

@@ -346,8 +346,15 @@ OPENAI_API_KEY=${config.ai.openaiApiKey}
 
 # Influencer Configuration
 NEXT_PUBLIC_INFLUENCER_ID=${config.influencer.id}
-NEXT_PUBLIC_INFLUENCER_NAME=${config.influencer.displayName}
+NEXT_PUBLIC_INFLUENCER_NAME=${config.influencer.name}
 NEXT_PUBLIC_INFLUENCER_HANDLE=${config.influencer.handle}
+NEXT_PUBLIC_INFLUENCER_DISPLAY_NAME=${config.influencer.displayName}
+NEXT_PUBLIC_INFLUENCER_BIO=${config.influencer.bio}
+NEXT_PUBLIC_INFLUENCER_AVATAR_URL=${config.influencer.avatarUrl}
+NEXT_PUBLIC_INFLUENCER_WEBSITE_URL=${config.influencer.websiteUrl}
+NEXT_PUBLIC_INFLUENCER_INSTAGRAM=${config.influencer.socialMedia.instagram}
+NEXT_PUBLIC_INFLUENCER_TWITTER=${config.influencer.socialMedia.twitter}
+NEXT_PUBLIC_INFLUENCER_TIKTOK=${config.influencer.socialMedia.tiktok}
 
 # Deployment Configuration
 NEXT_PUBLIC_APP_URL=${config.deployment.baseUrl}
