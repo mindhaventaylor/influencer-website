@@ -114,7 +114,7 @@ function loadConfigFromEnv(): InfluencerConfig {
       products: JSON.parse(process.env.STRIPE_PRODUCTS || JSON.stringify(fallbackConfig.stripe?.products || {})),
     },
     ai: {
-      creator_id: process.env.AI_CREATOR_ID || fallbackConfig.ai?.creator_id || '',
+      creator_id: process.env.AI_CREATOR_ID || fallbackConfig.ai?.creator_id || 'aaron_ai',
       openaiApiKey: process.env.OPENAI_API_KEY || fallbackConfig.ai?.openaiApiKey || '',
       apiBearerToken: process.env.AI_API_BEARER_TOKEN || fallbackConfig.ai?.apiBearerToken || '',
       model: process.env.AI_MODEL || fallbackConfig.ai?.model || 'gpt-4',
