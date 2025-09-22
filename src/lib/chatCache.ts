@@ -87,16 +87,23 @@ export const ChatCache = {
   },
 
   async getThread(influencerId: string, userId: string, limit = 5): Promise<Message[]> {
+    // Validate inputs
+    if (!influencerId || !userId) {
+      console.error('Invalid parameters for getThread:', { influencerId, userId });
+      throw new Error(`Invalid parameters: influencerId=${influencerId}, userId=${userId}`);
+    }
+
     const key = makeThreadKey(influencerId, userId);
     if (messagesByThreadId.has(key)) {
       return messagesByThreadId.get(key)!;
     }
     if (!messagesPromises.has(key)) {
+      console.log('🔄 Fetching chat thread for:', { influencerId, userId, limit });
       const p = api
         .getChatThread(influencerId, userId, limit, 0) // 🚀 OPTIMIZATION: Load fewer messages initially
         .then(async ({ data, error }) => {
           if (error) {
-            console.error('Error fetching chat thread:', error);
+            console.error('Error fetching chat thread:', { error, influencerId, userId });
             throw error;
           }
           const msgs = data || [];

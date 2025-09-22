@@ -16,10 +16,12 @@ import PrivacyPolicyScreen from '@/components/Settings/PrivacyPolicyScreen';
 import TermsAndConditionsScreen from '@/components/Settings/TermsAndConditionsScreen';
 import MobileNavigation from '@/components/ui/MobileNavigation';
 import MobileCallScreen from '@/components/ui/MobileCallScreen';
+import ChatDisclaimerModal from '@/components/ui/ChatDisclaimerModal';
 import { supabase } from '@/lib/supabaseClient';
 import api from '@/api';
 import { handleAuthError } from '@/lib/authErrorHandler';
 import { logError, logSuccess } from '@/lib/errorLogger';
+import { handleRefreshTokenError } from '@/lib/tokenRefreshHandler';
 import { getInfluencerDatabaseId } from '@/lib/config';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 
@@ -48,6 +50,8 @@ export default function Home() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isCreatingConversation, setIsCreatingConversation] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showChatDisclaimer, setShowChatDisclaimer] = useState(false);
+  const [pendingInfluencerId, setPendingInfluencerId] = useState<string | null>(null);
   const currentScreenRef = useRef(currentScreen);
   const conversationCreatedRef = useRef<Set<string>>(new Set());
 
@@ -105,8 +109,14 @@ export default function Home() {
         console.log('🚀 Initializing app...');
         setIsInitializing(true);
         
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
         console.log('📋 Initial session check:', session ? 'authenticated' : 'not authenticated');
+        
+        // Handle session retrieval errors (like refresh token issues)
+        if (error) {
+          console.error('Error getting initial session:', error);
+          await handleRefreshTokenError(error);
+        }
         
         if (session && isMounted) {
           setUser({ id: session.user.id, email: session.user.email!, token: session.access_token });
@@ -146,6 +156,20 @@ export default function Home() {
       if (!isMounted) return;
       
       console.log('🔄 Auth state change:', event, 'session:', session ? 'authenticated' : 'not authenticated');
+      
+      // Handle token refresh errors
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.warn('🔄 Token refresh failed, signing out user');
+        setUser(null);
+        if (conversationCreatedRef.current) {
+          conversationCreatedRef.current.clear();
+        }
+        if (setIsCreatingConversation) {
+          setIsCreatingConversation(false);
+        }
+        setCurrentScreen("SignIn");
+        return;
+      }
       
       if (session) {
         // Set login loading state to prevent bottom bar flash
@@ -219,8 +243,33 @@ export default function Home() {
       setCurrentScreen("SignIn");
       return;
     }
-    setInfluencerId(id);
-    setCurrentScreen("ChatThread");
+    setPendingInfluencerId(id);
+    setShowChatDisclaimer(true);
+  };
+
+  const handleDisclaimerContinue = () => {
+    if (pendingInfluencerId) {
+      setInfluencerId(pendingInfluencerId);
+      setCurrentScreen("ChatThread");
+    } else {
+      // If no pending influencer ID, try to get it from config
+      try {
+        const configInfluencerId = getInfluencerDatabaseId();
+        if (configInfluencerId) {
+          setInfluencerId(configInfluencerId);
+        }
+      } catch (error) {
+        console.log('⚠️ Could not get influencer ID from config:', error.message);
+      }
+      setCurrentScreen("ChatThread");
+    }
+    setShowChatDisclaimer(false);
+    setPendingInfluencerId(null);
+  };
+
+  const handleDisclaimerClose = () => {
+    setShowChatDisclaimer(false);
+    setPendingInfluencerId(null);
   };
 
   const handleGoToSettings = () => {
@@ -277,17 +326,19 @@ export default function Home() {
       const configInfluencerId = getInfluencerDatabaseId();
       
       if (configInfluencerId) {
-        setInfluencerId(configInfluencerId);
-        console.log('⚡ Chat tab: Using config influencerId:', configInfluencerId);
+        setPendingInfluencerId(configInfluencerId);
+        setShowChatDisclaimer(true);
+        console.log('⚡ Chat tab: Showing disclaimer for config influencerId:', configInfluencerId);
       } else {
-        console.log('⚠️ No influencer ID in config, ChatThread will fetch automatically');
+        console.log('⚠️ No influencer ID in config, showing disclaimer anyway');
+        setPendingInfluencerId(null);
+        setShowChatDisclaimer(true);
       }
     } catch (error) {
-      console.log('⚠️ Error reading config, ChatThread will fetch automatically:', error.message);
+      console.log('⚠️ Error reading config, showing disclaimer anyway:', error.message);
+      setPendingInfluencerId(null);
+      setShowChatDisclaimer(true);
     }
-    
-    // Navigate immediately
-    setCurrentScreen("ChatThread");
   };
 
   const handleSignOut = async () => {
@@ -426,6 +477,13 @@ export default function Home() {
             onResumeChat={handleResumeChat}
           />
         )}
+
+        {/* Chat Disclaimer Modal */}
+        <ChatDisclaimerModal
+          isOpen={showChatDisclaimer}
+          onContinue={handleDisclaimerContinue}
+          onClose={handleDisclaimerClose}
+        />
         
         {/* Main App Content */}
         <div className="flex flex-col min-h-screen">

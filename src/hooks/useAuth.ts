@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabaseClient';
+import { handleRefreshTokenError } from '@/lib/tokenRefreshHandler';
 
 interface AuthState {
   user: User | null;
@@ -16,8 +17,13 @@ export const useAuth = () => {
   });
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Get initial session with error handling
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting initial session:', error);
+        // Handle refresh token errors
+        await handleRefreshTokenError(error);
+      }
       setAuthState({
         user: session?.user ?? null,
         session,
@@ -28,7 +34,20 @@ export const useAuth = () => {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change:', event, session ? 'authenticated' : 'not authenticated');
+      
+      // Handle token refresh errors
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.warn('Token refresh failed, clearing session');
+        setAuthState({
+          user: null,
+          session: null,
+          loading: false,
+        });
+        return;
+      }
+      
       setAuthState({
         user: session?.user ?? null,
         session,

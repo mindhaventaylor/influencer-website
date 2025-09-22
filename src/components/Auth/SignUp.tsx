@@ -33,11 +33,108 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
   const [error, setError] = useState<string | null>(null);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
 
   const influencer = getClientInfluencerInfo();
 
-  // Consider the form complete when email, password, confirm password, date of birth, and all three consents are provided
-  const isFormComplete = email && password && confirmPassword && password === confirmPassword && dob && agreedToTerms && agreedToConsent && agreedToSharing;
+  // Supabase password validation - matches Supabase's default requirements
+  const validatePassword = (password: string): string | null => {
+    if (!password) {
+      return 'Password is required';
+    }
+    
+    // Supabase's default minimum length is 6 characters
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters long';
+    }
+    
+    // Additional security checks (optional but recommended)
+    if (password.length > 128) {
+      return 'Password must be less than 128 characters';
+    }
+    
+    return null; // Password is valid
+  };
+
+  // Validate password confirmation
+  const validateConfirmPassword = (confirmPassword: string, originalPassword: string): string | null => {
+    if (!confirmPassword) {
+      return 'Please confirm your password';
+    }
+    
+    if (confirmPassword !== originalPassword) {
+      return 'Passwords do not match';
+    }
+    
+    return null; // Confirmation is valid
+  };
+
+  // Function to validate and format date input
+  const validateAndFormatDate = (input: string): string => {
+    // Remove all non-numeric characters
+    const numbers = input.replace(/[^0-9]/g, '');
+    
+    // If empty, return empty
+    if (numbers === '') return '';
+    
+    // Handle different input lengths
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+    } else if (numbers.length <= 8) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+    } else {
+      // If more than 8 digits, truncate to 8
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+    }
+  };
+
+  // Function to validate if the date is valid and user is 18+
+  const isValidDate = (dateString: string): boolean => {
+    if (!dateString || dateString.length !== 10) return false;
+    
+    const parts = dateString.split('/');
+    if (parts.length !== 3) return false;
+    
+    const month = parseInt(parts[0]);
+    const day = parseInt(parts[1]);
+    const year = parseInt(parts[2]);
+    
+    // Basic validation
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900) return false;
+    
+    // Check if date is valid
+    const date = new Date(year, month - 1, day);
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+      return false;
+    }
+    
+    // Check if user is 18+
+    const today = new Date();
+    const age = today.getFullYear() - year;
+    const monthDiff = today.getMonth() - (month - 1);
+    const dayDiff = today.getDate() - day;
+    
+    if (age > 18 || (age === 18 && (monthDiff > 0 || (monthDiff === 0 && dayDiff >= 0)))) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Consider the form complete when all fields are valid
+  const isFormComplete = email && 
+    password && 
+    confirmPassword && 
+    !passwordError && 
+    !confirmPasswordError && 
+    dob && 
+    isValidDate(dob) && 
+    agreedToTerms && 
+    agreedToConsent && 
+    agreedToSharing;
 
   const handleProfileCreation = (profileData: any) => {
     setUserProfileData(profileData);
@@ -55,6 +152,24 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
   const handleSignUp = async () => {
     setError(null);
     setIsLoading(true);
+    
+    // Validate passwords before proceeding
+    const passwordValidationError = validatePassword(password);
+    const confirmPasswordValidationError = validateConfirmPassword(confirmPassword, password);
+    
+    if (passwordValidationError) {
+      setError(passwordValidationError);
+      setPasswordError(passwordValidationError);
+      setIsLoading(false);
+      return;
+    }
+    
+    if (confirmPasswordValidationError) {
+      setError(confirmPasswordValidationError);
+      setConfirmPasswordError(confirmPasswordValidationError);
+      setIsLoading(false);
+      return;
+    }
     
     if (!dob) {
       setError('Please provide your date of birth.');
@@ -223,9 +338,17 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                 <div className="relative">
                   <Input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
+                    placeholder="Enter your password (min 6 characters)"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      const newPassword = e.target.value;
+                      setPassword(newPassword);
+                      setPasswordError(validatePassword(newPassword));
+                      // Also re-validate confirm password when main password changes
+                      if (confirmPassword) {
+                        setConfirmPasswordError(validateConfirmPassword(confirmPassword, newPassword));
+                      }
+                    }}
                     className="w-full h-10 px-4 pr-12 rounded-2xl border-0 text-white transition-all shadow-inner"
                     style={{ 
                       backgroundColor: '#232325',
@@ -246,7 +369,11 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                   type="password"
                   placeholder="Confirm your password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => {
+                    const newConfirmPassword = e.target.value;
+                    setConfirmPassword(newConfirmPassword);
+                    setConfirmPasswordError(validateConfirmPassword(newConfirmPassword, password));
+                  }}
                   className="w-full h-10 px-4 rounded-2xl border-0 text-white transition-all shadow-inner"
                   style={{ 
                     backgroundColor: '#232325',
@@ -254,8 +381,14 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                     boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.3)'
                   }}
                 />
-                {confirmPassword && password !== confirmPassword && (
-                  <p className="text-red-400 text-sm mt-1">Passwords do not match</p>
+                {passwordError && (
+                  <p className="text-red-400 text-sm mt-1">{passwordError}</p>
+                )}
+                {confirmPasswordError && (
+                  <p className="text-red-400 text-sm mt-1">{confirmPasswordError}</p>
+                )}
+                {password && confirmPassword && !passwordError && !confirmPasswordError && (
+                  <p className="text-green-400 text-sm mt-1">✓ Passwords match and are valid</p>
                 )}
               </div>
             </div>
@@ -267,11 +400,15 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
               <div className="relative">
                 <input
                   type="text"
-                  readOnly
-                  placeholder="mm/dd/yyyy"
+                  placeholder="mm/dd/yyyy or click to select"
                   value={dob}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const formatted = validateAndFormatDate(value);
+                    setDob(formatted);
+                  }}
                   onClick={() => setShowDatePicker(true)}
-                  className="w-full h-11 px-4 rounded-2xl border-0 text-white cursor-pointer transition-all"
+                  className="w-full h-11 px-4 rounded-2xl border-0 text-white cursor-text transition-all"
                   style={{ 
                     backgroundColor: '#232325',
                     borderRadius: '20px',
@@ -279,6 +416,12 @@ const SignUp = ({ onSignUpSuccess, onGoBack, profileData }: SignUpProps) => {
                     color: '#EDEDED'
                   }}
                 />
+                {dob && dob.length === 10 && !isValidDate(dob) && (
+                  <p className="text-red-400 text-sm mt-1">Please enter a valid date (mm/dd/yyyy) and ensure you are 18+</p>
+                )}
+                {dob && dob.length === 10 && isValidDate(dob) && (
+                  <p className="text-green-400 text-sm mt-1">✓ Valid date</p>
+                )}
                 {showDatePicker && (
                   <div className="absolute left-0 mt-2 z-50 w-full rounded-xl p-4 shadow-xl" style={{ backgroundColor: '#232325', maxHeight: '300px', overflowY: 'auto' }}>
                     <DatePickerPopup

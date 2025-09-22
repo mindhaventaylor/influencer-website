@@ -82,13 +82,29 @@ const api = {
   },
 
   async getChatThread(influencerId: string, userId: string, limit = 10, offset = 0) {
-    return supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('influencer_id', influencerId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false }) // 🚀 FIX: Show newest messages first
-      .range(offset, offset + limit - 1);
+    // Validate inputs
+    if (!influencerId || !userId) {
+      console.error('Invalid parameters for getChatThread:', { influencerId, userId });
+      return { data: null, error: { message: `Invalid parameters: influencerId=${influencerId}, userId=${userId}` } };
+    }
+
+    console.log('🔄 API getChatThread called with:', { influencerId, userId, limit, offset });
+    
+    try {
+      const result = await supabase
+        .from('chat_messages')
+        .select('*')
+        .eq('influencer_id', influencerId)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false }) // 🚀 FIX: Show newest messages first
+        .range(offset, offset + limit - 1);
+      
+      console.log('📋 API getChatThread result:', { dataLength: result.data?.length, error: result.error });
+      return result;
+    } catch (error) {
+      console.error('❌ API getChatThread exception:', error);
+      return { data: null, error: { message: error.message || 'Unknown error occurred' } };
+    }
   },
 
   async postMessage(influencerId: string, content: string, userId: string) {

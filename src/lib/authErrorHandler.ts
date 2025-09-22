@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { UserFriendlyError } from './userFriendlyError';
+import { isRefreshTokenError, clearAuthData } from './tokenRefreshHandler';
 
 /**
  * Handles authentication errors by signing out the user and redirecting to login
@@ -27,14 +28,15 @@ export async function handleAuthError(
       error.message.includes('User not authenticated') ||
       error.message.includes('Access forbidden') ||
       error.message.includes('Access denied')
-    ));
+    )) ||
+    isRefreshTokenError(error);
 
   if (isAuthError) {
     console.log('🔐 Authentication error detected, signing out user...');
     
     try {
-      // Sign out the user
-      await supabase.auth.signOut();
+      // Use the utility function to clear auth data
+      await clearAuthData();
       
       // Clear all state
       setUser(null);

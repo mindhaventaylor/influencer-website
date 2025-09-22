@@ -30,6 +30,8 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [featureMessage, setFeatureMessage] = useState('');
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const isInitialLoadRef = useRef(true);
+  const isLoadingMoreRef = useRef(false);
 
   const clientInfluencer = getClientInfluencerInfo();
 
@@ -65,15 +67,43 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
           if (mounted) setInfluencer(influencerData);
         } else {
           // 🚀 OPTIMIZATION: Use combined endpoint to get both influencer data and ID in one request
-          const combinedResponse = await fetch('/api/influencer/combined');
-          
-          if (combinedResponse.ok) {
-            const responseData = await combinedResponse.json();
-            influencerData = responseData.influencer;
-            influencerIdData = responseData.influencerId;
+          try {
+            const combinedResponse = await fetch('/api/influencer/combined');
             
-            // Cache the data for future use
-            InfluencerCache.set(influencerData, influencerIdData);
+            if (combinedResponse.ok) {
+              const responseData = await combinedResponse.json();
+              influencerData = responseData.influencer;
+              influencerIdData = responseData.influencerId;
+              
+              // Cache the data for future use
+              InfluencerCache.set(influencerData, influencerIdData);
+              
+              if (mounted) setInfluencer(influencerData);
+            } else {
+              console.warn('⚠️ Combined influencer API failed, using fallback');
+              // Fallback to client config data
+              influencerData = {
+                id: clientInfluencer.id,
+                display_name: clientInfluencer.displayName,
+                avatar_url: clientInfluencer.avatarUrl,
+                bio: clientInfluencer.bio,
+                is_active: true
+              };
+              influencerIdData = { id: clientInfluencer.id };
+              
+              if (mounted) setInfluencer(influencerData);
+            }
+          } catch (fetchError) {
+            console.warn('⚠️ Error fetching combined influencer data, using fallback:', fetchError);
+            // Fallback to client config data
+            influencerData = {
+              id: clientInfluencer.id,
+              display_name: clientInfluencer.displayName,
+              avatar_url: clientInfluencer.avatarUrl,
+              bio: clientInfluencer.bio,
+              is_active: true
+            };
+            influencerIdData = { id: clientInfluencer.id };
             
             if (mounted) setInfluencer(influencerData);
           }
@@ -83,6 +113,20 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
           // Use the resolved influencer ID (database UUID) for chat messages
           // If no influencerId was passed, use the current influencer
           const resolvedInfluencerId = influencerId || influencerIdData.id;
+          
+          console.log('🔄 ChatThread: Resolved IDs:', { 
+            originalInfluencerId: influencerId, 
+            resolvedInfluencerId, 
+            userId,
+            influencerData: !!influencerData,
+            influencerIdData: !!influencerIdData
+          });
+          
+          // Validate we have required IDs
+          if (!resolvedInfluencerId || !userId) {
+            console.error('❌ ChatThread: Missing required IDs:', { resolvedInfluencerId, userId });
+            throw new Error('Missing required influencer or user ID');
+          }
           
           // 🚀 OPTIMIZATION: Check cache first and show immediately if available
           const cachedMsgs = ChatCache.peekThread(resolvedInfluencerId, userId);
@@ -94,10 +138,53 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
           }
           
           // Fetch fresh messages in background
+          console.log('🔄 ChatThread: Fetching messages for:', { resolvedInfluencerId, userId });
           const msgs = await ChatCache.getThread(resolvedInfluencerId, userId);
           if (mounted) {
             setMessages(msgs);
             setLoading(false);
+          }
+        } else {
+          console.error('❌ ChatThread: Missing influencer data, using emergency fallback:', { influencerData: !!influencerData, influencerIdData: !!influencerIdData });
+          
+          // Emergency fallback - use client config data
+          const emergencyInfluencerData = {
+            id: clientInfluencer.id,
+            display_name: clientInfluencer.displayName,
+            avatar_url: clientInfluencer.avatarUrl,
+            bio: clientInfluencer.bio,
+            is_active: true
+          };
+          const emergencyInfluencerIdData = { id: clientInfluencer.id };
+          
+          if (mounted) setInfluencer(emergencyInfluencerData);
+          
+          // Proceed with emergency data
+          const resolvedInfluencerId = influencerId || emergencyInfluencerIdData.id;
+          
+          if (resolvedInfluencerId && userId) {
+            console.log('🚨 ChatThread: Using emergency fallback data:', { resolvedInfluencerId, userId });
+            
+            // Fetch messages with emergency data
+            try {
+              const msgs = await ChatCache.getThread(resolvedInfluencerId, userId);
+              if (mounted) {
+                setMessages(msgs);
+                setLoading(false);
+              }
+            } catch (emergencyError) {
+              console.error('❌ ChatThread: Emergency fallback also failed:', emergencyError);
+              if (mounted) {
+                toast.error('Failed to load chat. Please try refreshing the page.');
+                setLoading(false);
+              }
+            }
+          } else {
+            console.error('❌ ChatThread: Emergency fallback missing required IDs:', { resolvedInfluencerId, userId });
+            if (mounted) {
+              toast.error('Unable to load chat. Please check your connection and try again.');
+              setLoading(false);
+            }
           }
         }
       } catch (err) {
@@ -155,15 +242,19 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   }, [influencerId, userId]);
 
   useEffect(() => {
-    // Small delay to ensure DOM is updated
-    setTimeout(() => {
-      scrollToBottom();
-    }, 100);
+    // Only scroll to bottom on initial load or when AI is replying (new messages)
+    // Don't scroll when loading more messages (pagination)
+    if (isInitialLoadRef.current || isAiReplying) {
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+      isInitialLoadRef.current = false; // Mark initial load as complete
+    }
   }, [messages, isAiReplying]);
 
-  // Auto-scroll when new messages arrive
+  // Auto-scroll when new messages arrive (but not when loading more)
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && !isLoadingMoreRef.current) {
       setTimeout(() => {
         scrollToBottom();
       }, 50);
@@ -252,6 +343,10 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
       }
     } finally {
       setIsAiReplying(false);
+      // Scroll to bottom after sending message and getting AI response
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
     }
   };
 
@@ -261,19 +356,25 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
     
     try {
       setLoadingMore(true);
+      isLoadingMoreRef.current = true; // Mark that we're loading more messages
+      
       const newMessages = await ChatCache.loadMoreMessages(influencer.id, userId, 5);
       
       if (newMessages.length < 5) {
         setHasMoreMessages(false);
       }
       
-      // Update messages state
+      // Update messages state - prepend older messages
       setMessages(prev => [...newMessages, ...prev]);
     } catch (error) {
       console.error('Error loading more messages:', error);
       toast.error('Failed to load more messages');
     } finally {
       setLoadingMore(false);
+      // Reset the loading more flag after a short delay to allow for state updates
+      setTimeout(() => {
+        isLoadingMoreRef.current = false;
+      }, 100);
     }
   };
 
