@@ -5,7 +5,7 @@
     "handle": "teste",
     "displayName": "teste",
     "bio": "teste",
-    "avatarUrl": "/images/teste-avatar.jpg",
+    "avatarUrl": "teste-avatar.jpg",
     "coverImageUrl": "/images/teste-cover.jpg",
     "websiteUrl": "http://taylor.devopai.net/",
     "socialMedia": {
