@@ -146,7 +146,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
         <div className="flex items-center space-x-3">
           <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-red-500">
             <img 
-              src={influencer.avatar_url || clientInfluencer.avatarUrl} 
+              src="/default_avatar.png" 
               alt={influencer.display_name || clientInfluencer.displayName}
               className="w-full h-full object-cover"
               loading="lazy"
@@ -179,7 +179,7 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
       <div className="flex flex-col items-center px-6 pt-20 pb-8 space-y-8">
         <div className="w-48 h-48 rounded-3xl overflow-hidden border-4 border-red-500 shadow-2xl">
           <img 
-            src={influencer.avatar_url || clientInfluencer.avatarUrl} 
+            src="/default_avatar.png" 
             alt={influencer.display_name || clientInfluencer.displayName}
             className="w-full h-full object-cover"
             loading="lazy"

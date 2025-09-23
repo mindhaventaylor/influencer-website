@@ -4,6 +4,7 @@ import { ChevronRight, Check, ArrowLeft } from 'lucide-react';
 import { getClientInfluencerInfo } from '@/lib/clientConfig';
 import { useAuth } from '@/hooks/useAuth';
 import PlansModal from '@/components/Payment/PlansModal';
+import { InfluencerCache } from '@/lib/influencerCache';
 
 interface ProfileScreenProps {
   onEditProfile: () => void;
@@ -12,15 +13,48 @@ interface ProfileScreenProps {
   onSignOut: () => void;
 }
 
-export default function ProfileScreen({ 
-  onEditProfile, 
-  onManageSubscription, 
+export default function ProfileScreen({
+  onEditProfile,
+  onManageSubscription,
   onDeleteAccount,
   onSignOut
 }: ProfileScreenProps) {
-  const { user } = useAuth();
+  const { user: authUser, session } = useAuth();
   const influencer = getClientInfluencerInfo();
   const [showPlansModal, setShowPlansModal] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchUserProfile = async () => {
+      if (!authUser || !session) return;
+
+      try {
+        setLoading(true);
+        const response = await fetch('/api/user/current', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (response.ok && mounted) {
+          const userData = await response.json();
+          setUserProfile(userData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, [authUser, session]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -35,14 +69,14 @@ export default function ProfileScreen({
           {/* Hero Card */}
           <div className="bg-card rounded-2xl p-8 mb-8 text-center">
             <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-2 border-border">
-              <img 
-                src={user?.avatarUrl || influencer.avatarUrl} 
-                alt={user?.displayName || influencer.displayName}
+              <img
+                src="/profile.png"
+                alt={userProfile?.display_name || userProfile?.username || authUser?.email || 'User'}
                 className="w-full h-full object-cover"
               />
             </div>
             <h2 className="text-xl font-semibold mb-1 text-card-foreground">
-              {user?.displayName || 'John Smith'}
+              {userProfile?.display_name || userProfile?.username || authUser?.email || 'User'}
             </h2>
             <p className="text-sm mb-4 text-muted-foreground">Premium Member</p>
             

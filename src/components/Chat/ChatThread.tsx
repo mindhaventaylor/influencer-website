@@ -218,7 +218,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
           }
         }
         
-        if (resolvedInfluencerId) {
+        if (resolvedInfluencerId && userId) {
           unsubscribe = ChatCache.subscribeThread(resolvedInfluencerId, userId, (msgs) => {
             if (mounted && !isOptimisticUpdateRef.current) {
               console.log('🔄 Received cache update:', msgs.length, 'messages');
@@ -275,11 +275,16 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
     }
     const influencerIdData = await influencerIdResponse.json();
     const resolvedInfluencerId = influencerIdData.id;
+    
+    if (!userId) {
+      alert('User ID is required');
+      return;
+    }
 
-    const tempId = Date.now();
+    const tempId = Date.now().toString();
     const optimisticUserMessage = { 
       id: tempId, 
-      sender: 'user', 
+      sender: 'user' as const, 
       content: userMessageContent, 
       created_at: new Date().toISOString(),
       is_temp: true // Mark as temporary for identification
@@ -474,7 +479,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                 className="w-12 h-12 rounded-full overflow-hidden border-2 border-red-500 hover:opacity-80 transition-opacity"
               >
                 <img 
-                  src={influencer.avatar_url || clientInfluencer.avatarUrl} 
+                  src="/default_avatar.png" 
                   alt={influencer.display_name || clientInfluencer.displayName} 
                   className="w-full h-full object-cover"
                 />
@@ -515,7 +520,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
               <div className="text-center max-w-md">
               <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-red-500 mx-auto mb-6">
                 <img 
-                  src={influencer?.avatar_url || clientInfluencer.avatarUrl} 
+                  src="/default_avatar.png" 
                   alt={influencer?.display_name || clientInfluencer.displayName} 
                   className="w-full h-full object-cover"
                 />
@@ -554,7 +559,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
             {messages
               .flatMap((message) => {
                 if (message.content && message.content.includes('\n')) {
-                  return message.content.split('\n').map((line, index) => ({
+                  return message.content.split('\n').map((line: string, index: number) => ({
                     ...message,
                     id: `${message.id}-${index}`,
                     content: line,
@@ -576,6 +581,15 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                     key={message.id}
                     className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'} ${isDifferentUser ? 'mb-2' : ''}`}
                   >
+                    {message.sender === 'ai' && (
+                      <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-red-500 mr-3 flex-shrink-0">
+                        <img 
+                          src="/default_avatar.png" 
+                          alt={influencer?.display_name || clientInfluencer.displayName} 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
                     <div
                       className={`p-4 rounded-2xl max-w-xs lg:max-w-md ${
                         message.sender === 'user'
@@ -585,6 +599,15 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                     >
                       <MessageFormatter content={message.content} />
                     </div>
+                    {message.sender === 'user' && (
+                      <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-red-500 ml-3 flex-shrink-0">
+                        <img 
+                          src="/profile.png" 
+                          alt="User" 
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -595,7 +618,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
           <div className="flex items-end">
             <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-red-500 mr-3">
               <img 
-                src={influencer?.avatar_url || clientInfluencer.avatarUrl} 
+                src="/default_avatar.png" 
                 alt={influencer?.display_name || clientInfluencer.displayName} 
                 className="w-full h-full object-cover"
               />
@@ -707,7 +730,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
             <div className="text-center">
               <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-red-500 mx-auto mb-4">
                 <img 
-                  src={influencer?.avatar_url || clientInfluencer.avatarUrl} 
+                  src="/default_avatar.png" 
                   alt={influencer?.display_name || clientInfluencer.displayName} 
                   className="w-full h-full object-cover"
                 />

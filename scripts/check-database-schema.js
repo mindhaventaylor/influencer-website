@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-require('dotenv').config({ path: '.env.local' });/usr/bin/env node
+require('dotenv').config({ path: '.env.local' });
 
 const { createClient } = require('@supabase/supabase-js');
 
