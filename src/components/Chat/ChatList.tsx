@@ -206,18 +206,18 @@ const ChatList = ({ onViewChat, onGoToSettings, onGoToProfile }: ChatListProps) 
           <Button
             variant="outline"
             className="flex-1 p-3 rounded-xl border-border text-muted-foreground hover:bg-secondary"
-            onClick={onGoToProfile}
+            onClick={() => { setFeatureMessage('Voice calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
           >
-            <User className="w-4 h-4 mr-2" />
-            Profile
+            <Phone className="w-4 h-4 mr-2" />
+            Audio Call
           </Button>
           <Button
             variant="outline"
             className="flex-1 p-3 rounded-xl border-border text-muted-foreground hover:bg-secondary"
-            onClick={onGoToSettings}
+            onClick={() => { setFeatureMessage('Video calling is coming soon — we\'re working on it!'); setShowFeatureModal(true); }}
           >
-            <Settings className="w-4 h-4 mr-2" />
-            Settings
+            <Video className="w-4 h-4 mr-2" />
+            Video Call
           </Button>
         </div>
         <div className="h-40"></div> {/* Extra space for scrolling */}

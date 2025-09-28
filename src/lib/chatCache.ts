@@ -103,7 +103,15 @@ export const ChatCache = {
         .getChatThread(influencerId, userId, limit, 0) // 🚀 OPTIMIZATION: Load fewer messages initially
         .then(async ({ data, error }) => {
           if (error) {
-            console.error('Error fetching chat thread:', { error, influencerId, userId });
+            console.error('Error fetching chat thread:', { 
+              error, 
+              errorMessage: error.message,
+              errorCode: error.code,
+              influencerId, 
+              userId,
+              influencerIdType: typeof influencerId,
+              userIdType: typeof userId
+            });
             throw error;
           }
           const msgs = data || [];

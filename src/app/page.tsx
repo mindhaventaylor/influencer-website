@@ -119,6 +119,18 @@ export default function Home() {
         }
         
         if (session && isMounted) {
+          console.log('📋 Session details:', {
+            userId: session.user.id,
+            email: session.user.email,
+            hasToken: !!session.access_token,
+            userObject: session.user
+          });
+          
+          if (!session.user.id) {
+            console.error('❌ Session user ID is missing:', session.user);
+            throw new Error('User ID not found in session');
+          }
+          
           setUser({ id: session.user.id, email: session.user.email!, token: session.access_token });
           
           // Create conversation for existing session (user already logged in)
