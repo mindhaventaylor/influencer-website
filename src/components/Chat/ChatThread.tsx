@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Send, ChevronLeft, Image, Mic, Upload } from 'lucide-react';
 import MessageFormatter from '@/components/ui/MessageFormatter';
 import MultimediaMessage from '@/components/ui/MultimediaMessage';
+import AudioRecorder from '@/components/ui/AudioRecorder';
 import ChatCache from '@/lib/chatCache';
 import { getUserFriendlyError } from '@/lib/errorMessages';
 import { logError } from '@/lib/errorLogger';
@@ -27,6 +28,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   const [loading, setLoading] = useState(true);
   const [isAiReplying, setIsAiReplying] = useState(false);
   const [aiResponseType, setAiResponseType] = useState<'text' | 'audio'>('audio');
+  const [isRecording, setIsRecording] = useState(false);
   
   // Debug: Log when animation type changes
   useEffect(() => {
@@ -97,6 +99,20 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleAudioRecorded = (audioBlob: Blob) => {
+    // Convert blob to file
+    const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, {
+      type: 'audio/webm'
+    });
+    setSelectedFile(audioFile);
+    setInputMediaType('audio');
+    setIsRecording(false);
+  };
+
+  const handleCancelRecording = () => {
+    setIsRecording(false);
   };
 
   useEffect(() => {
@@ -377,20 +393,21 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
       }
     }
 
-    // Handle both image and text in the same message
+    // Handle different message types (text, image, audio, or combinations)
     let messageContent = '';
     let messageType = 'text';
     
     if (selectedFile && userMessageContent.trim()) {
-      // Both image and text - store as JSON in content, use 'image' type
+      // Both media (image/audio) and text - store as JSON in content
       messageContent = JSON.stringify({
         text: userMessageContent,
-        image: base64Data,
+        media: base64Data,
         hasText: true
       });
-      messageType = 'image'; // Use existing 'image' type
+      // Use the actual media type with '_with_text' suffix
+      messageType = `${inputMediaType}_with_text`;
     } else if (selectedFile) {
-      // Only image
+      // Only media (image or audio)
       messageContent = base64Data || '';
       messageType = inputMediaType;
     } else {
@@ -454,13 +471,15 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
             influencer_name: influencer?.display_name || clientInfluencer.displayName,
             chat_history: messages.slice(-10)
               .filter(msg => {
-                // Only include text messages, exclude image and audio messages
+                // Only include text messages, exclude pure image and audio messages (with base64)
                 const messageType = msg.type || 'text';
-                return messageType === 'text' || messageType === 'image_with_text';
+                return messageType === 'text' || 
+                       messageType === 'image_with_text' || 
+                       messageType === 'audio_with_text';
               })
               .map(msg => {
-                // For image_with_text messages, extract only the text part
-                if (msg.type === 'image_with_text' && typeof msg.content === 'string') {
+                // For media_with_text messages, extract only the text part
+                if ((msg.type === 'image_with_text' || msg.type === 'audio_with_text') && typeof msg.content === 'string') {
                   try {
                     const parsed = JSON.parse(msg.content);
                     return [msg.sender, parsed.text || msg.content];
@@ -471,13 +490,12 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                 return [msg.sender, msg.content];
               }),
             msgs_cnt_by_user: messages.filter(msg => msg.sender === 'user').length,
-            input_media_type: messageType, // Use the new messageType that handles image_with_text
+            input_media_type: inputMediaType, // Use inputMediaType (audio/image/text) not messageType
             user_query: userMessageContent || '',
-            should_generate_tts: false,
+            should_generate_tts: (messages.filter(msg => msg.sender === 'user').length + 1) % 15 === 0, // TTS every 15th message
             elevenlabs_voice_id: process.env.ELEVENLABS_VOICE_ID,
-            ...(messageType === 'image' && { image_data: base64Data }),
-            ...(messageType === 'image_with_text' && { image_data: base64Data }),
-            ...(messageType === 'audio' && { audio_data: base64Data })
+            ...(inputMediaType === 'image' && { image_data: base64Data }),
+            ...(inputMediaType === 'audio' && { audio_data: base64Data })
           };
 
           console.log('🚀 Sending multimedia request:', { 
@@ -997,23 +1015,40 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
               </div>
             )}
 
-            <div className="flex items-center space-x-3">
-              {/* File Upload Button */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,audio/*"
-                onChange={handleFileSelect}
-                className="hidden"
+            {/* Audio Recorder */}
+            {isRecording && (
+              <AudioRecorder
+                onAudioRecorded={handleAudioRecorded}
+                onCancel={handleCancelRecording}
               />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="p-4 rounded-2xl bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all duration-200"
-              >
-                <Upload className="h-5 w-5" />
-              </button>
+            )}
 
-              <Input
+            {!isRecording && (
+              <div className="flex items-center space-x-3">
+                {/* File Upload Button */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,audio/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-4 rounded-2xl bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all duration-200"
+                >
+                  <Upload className="h-5 w-5" />
+                </button>
+
+                {/* Voice Recording Button */}
+                <button
+                  onClick={() => setIsRecording(true)}
+                  className="p-4 rounded-2xl bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all duration-200"
+                >
+                  <Mic className="h-5 w-5" />
+                </button>
+
+                <Input
                 type="text"
                 placeholder={selectedFile ? `Add message to ${inputMediaType}...` : "Type a message..."}
                 value={newMessage}
@@ -1025,14 +1060,15 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                 }}
                 className="flex-1 p-4 rounded-2xl bg-input border border-border text-foreground placeholder-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base md:text-sm"
               />
-              <button 
-                onClick={handleSendMessage} 
-                className="p-4 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200"
-                style={{ backgroundColor: 'hsl(0 84% 60%)', color: 'hsl(0 0% 100%)' }}
-              >
-                <Send className="h-5 w-5" />
-              </button>
-            </div>
+                <button 
+                  onClick={handleSendMessage} 
+                  className="p-4 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200"
+                  style={{ backgroundColor: 'hsl(0 84% 60%)', color: 'hsl(0 0% 100%)' }}
+                >
+                  <Send className="h-5 w-5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

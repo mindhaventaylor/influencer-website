@@ -38,14 +38,16 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
   // chat history pairs for backend - filter out multimedia messages to avoid base64 data
   const chatHistory = [...chronological, { sender: 'user', content: latestUserMessage }]
     .filter((msg: any) => {
-      // Only include text messages, exclude image and audio messages
+      // Only include text messages, exclude pure image and audio messages (with base64)
       const messageType = msg.type || 'text';
-      return messageType === 'text' || messageType === 'image_with_text';
+      return messageType === 'text' || 
+             messageType === 'image_with_text' || 
+             messageType === 'audio_with_text';
     })
     .slice(-10) // Limit to last 10 messages
     .map((msg: any) => {
-      // For image_with_text messages, extract only the text part
-      if (msg.type === 'image_with_text' && typeof msg.content === 'string') {
+      // For media_with_text messages, extract only the text part
+      if ((msg.type === 'image_with_text' || msg.type === 'audio_with_text') && typeof msg.content === 'string') {
         try {
           const parsed = JSON.parse(msg.content);
           return [msg.sender === 'user' ? 'user' : 'assistant', parsed.text || msg.content];
@@ -92,13 +94,13 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
   // Use the personality prompt from the database (passed from the main function)
   const personalityPrompt = influencerModelPreset.system_prompt || `You are ${influencerName}, a helpful AI assistant.`;
 
-  // Configure audio generation - Always generate audio for every response
-  const shouldGenerateAudio = true;
+  // Configure audio generation based on message count (every 15 messages)
+  const shouldGenerateAudio = msgsCntByUser % 15 === 0;
   console.log('🔊 Audio generation check (FAST MODE):', {
     msgs_cnt_by_user: msgsCntByUser,
     should_generate_tts: shouldGenerateAudio,
-    shouldSendAudio: true,
-    mode: 'always_audio_fast'
+    isDivisibleBy15: msgsCntByUser % 15 === 0,
+    mode: shouldGenerateAudio ? 'audio_fast' : 'text_fast'
   });
 
   const requestBody = {
@@ -390,9 +392,9 @@ export async function POST(request: NextRequest) {
     );
     console.log('🚀 FAST MODE: AI reply generated successfully!');
 
-    // VARIABLE RESPONSE: Randomly choose between text and audio responses
-    const shouldSendAudio = Math.random() <= 0.4; // 40% chance of audio, 60% text (balanced for stability)
-    console.log(`🎲 Random response type: ${shouldSendAudio ? 'AUDIO' : 'TEXT'} (${Math.random().toFixed(2)})`);
+    // Use the AI reply result's shouldGenerateAudio flag
+    const shouldSendAudio = aiReplyResult.shouldGenerateAudio;
+    console.log(`🔊 Response type based on TTS logic: ${shouldSendAudio ? 'AUDIO' : 'TEXT'}`);
     
     // Generate base64 audio content for testing
     const generateMockBase64Audio = () => {

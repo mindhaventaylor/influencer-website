@@ -179,13 +179,14 @@ export async function POST(request: NextRequest) {
 
     const { body: aiData } = aiResult;
 
-    // Configure audio generation - Always generate audio for every response
-    const shouldSendAudio = true; // Every AI response will be audio
-    console.log('🔊 Audio generation check:', {
+    // Respect should_generate_tts from request OR check message count
+    const shouldSendAudio = should_generate_tts || (msgs_cnt_by_user % 15 === 0);
+    console.log('🔊 Audio generation check (MULTIMEDIA):', {
       msgs_cnt_by_user,
       should_generate_tts,
-      shouldSendAudio: true,
-      mode: 'always_audio'
+      isDivisibleBy15: msgs_cnt_by_user % 15 === 0,
+      shouldSendAudio,
+      mode: shouldSendAudio ? 'audio_multimedia' : 'text_multimedia'
     });
 
     // Create user message with structured data

@@ -29,7 +29,7 @@ export interface ClientBranding {
 function loadClientConfig() {
   return {
     influencer: {
-      id: process.env.NEXT_PUBLIC_INFLUENCER_ID || 'New Taylor',
+      id: process.env.NEXT_PUBLIC_INFLUENCER_DATABASE_ID || '850bc937-1f5a-4f65-86e0-1a5254d9d23a', // Use database UUID, not name
       name: process.env.NEXT_PUBLIC_INFLUENCER_NAME || 'New Taylor Swifty',
       handle: process.env.NEXT_PUBLIC_INFLUENCER_HANDLE || 'new taylowswifty',
       displayName: process.env.NEXT_PUBLIC_INFLUENCER_NAME || 'new Taylor',
