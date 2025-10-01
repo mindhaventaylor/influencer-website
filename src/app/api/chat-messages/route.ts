@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         conversation_id,
         sender,
         content,
-        type  // Database actually uses 'type' field, not 'content_type'
+        type: type  // Use correct database field name
       }])
       .select()
       .single();

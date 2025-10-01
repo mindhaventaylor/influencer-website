@@ -111,10 +111,20 @@ const api = {
       });
     
     try {
-      // Note: This is a client-side function, so we assume the session is already available
-      // The session should be managed by the useAuth hook in the component
+      // Check for valid session first
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ Session error:', sessionError);
+        return { data: null, error: { message: 'Authentication error', details: sessionError.message } };
+      }
+      
+      if (!session) {
+        console.error('❌ No active session found');
+        return { data: null, error: { message: 'No active session', details: 'User must be logged in' } };
+      }
+      
       console.log('🔍 getChatThread called with:', { influencerId, userId });
-
       console.log('✅ Session found, proceeding with query...');
       
       // Test basic table access first
@@ -172,9 +182,26 @@ const api = {
           errorDetails: basicResult.error?.details,
           errorHint: basicResult.error?.hint,
           isEmptyError,
-          errorKeys
+          errorKeys,
+          fullError: JSON.stringify(basicResult.error, null, 2)
         });
-        return basicResult;
+        
+        // Try a fallback query with minimal fields
+        console.log('🔄 Trying fallback query with minimal fields...');
+        const fallbackResult = await supabase
+          .from('chat_messages')
+          .select('id, sender, content, type, created_at')
+          .eq('influencer_id', influencerId)
+          .eq('user_id', userId)
+          .limit(5);
+        
+        if (fallbackResult.error) {
+          console.error('❌ Fallback query also failed:', fallbackResult.error);
+          return { data: [], error: { message: 'Database query failed', details: 'Both basic and fallback queries failed' } };
+        }
+        
+        console.log('✅ Fallback query succeeded:', { dataLength: fallbackResult.data?.length });
+        return fallbackResult;
       }
       
       // If basic query works, try with ordering and range

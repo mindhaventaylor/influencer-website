@@ -26,6 +26,12 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [isAiReplying, setIsAiReplying] = useState(false);
+  const [aiResponseType, setAiResponseType] = useState<'text' | 'audio'>('audio');
+  
+  // Debug: Log when animation type changes
+  useEffect(() => {
+    console.log('🎭 Animation type changed to:', aiResponseType);
+  }, [aiResponseType]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -170,9 +176,26 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
         }
         
         if (influencerData && influencerIdData) {
-          // Use the resolved influencer ID (database UUID) for chat messages
-          // If no influencerId was passed, use the current influencer
-          const resolvedInfluencerId = influencerId || influencerIdData.id;
+          // 🚀 FIX: Extract UUID from combined influencer ID string if needed
+          let resolvedInfluencerId = influencerIdData.id; // Default to fetched ID
+          
+          if (influencerId) {
+            // Check if influencerId contains both name and UUID (format: "Name:UUID")
+            if (influencerId.includes(':')) {
+              const parts = influencerId.split(':');
+              if (parts.length >= 2) {
+                // Extract the UUID part (last part after the colon)
+                resolvedInfluencerId = parts[parts.length - 1];
+                console.log('🔄 ChatThread: Extracted UUID from combined ID:', { 
+                  original: influencerId, 
+                  extracted: resolvedInfluencerId 
+                });
+              }
+            } else {
+              // If no colon, use the influencerId as-is (might be a direct UUID)
+              resolvedInfluencerId = influencerId;
+            }
+          }
           
           console.log('🔄 ChatThread: Resolved IDs:', { 
             originalInfluencerId: influencerId, 
@@ -403,6 +426,19 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
     }, 100);
     
     setIsAiReplying(true);
+    // Set initial animation based on input type
+    if (selectedFile) {
+      if (inputMediaType === 'audio') {
+        console.log('🎭 Setting initial animation to audio (audio input detected)');
+        setAiResponseType('audio'); // Show audio animation for audio input
+      } else {
+        console.log('🎭 Setting initial animation to text (image input detected)');
+        setAiResponseType('text'); // Show text animation for image/text input
+      }
+    } else {
+      console.log('🎭 Setting initial animation to text (text input detected)');
+      setAiResponseType('text'); // Default to text animation for text input
+    }
 
     try {
       // Try multimedia API first if we have a file
@@ -416,7 +452,24 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
             user_id: userId,
             creator_id: resolvedInfluencerId,
             influencer_name: influencer?.display_name || clientInfluencer.displayName,
-            chat_history: messages.slice(-10).map(msg => [msg.sender, msg.content]),
+            chat_history: messages.slice(-10)
+              .filter(msg => {
+                // Only include text messages, exclude image and audio messages
+                const messageType = msg.type || 'text';
+                return messageType === 'text' || messageType === 'image_with_text';
+              })
+              .map(msg => {
+                // For image_with_text messages, extract only the text part
+                if (msg.type === 'image_with_text' && typeof msg.content === 'string') {
+                  try {
+                    const parsed = JSON.parse(msg.content);
+                    return [msg.sender, parsed.text || msg.content];
+                  } catch {
+                    return [msg.sender, msg.content];
+                  }
+                }
+                return [msg.sender, msg.content];
+              }),
             msgs_cnt_by_user: messages.filter(msg => msg.sender === 'user').length,
             input_media_type: messageType, // Use the new messageType that handles image_with_text
             user_query: userMessageContent || '',
@@ -554,12 +607,17 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
             
             // Final fallback: just text message
             const messageContent = `${userMessageContent || ''} [${inputMediaType.toUpperCase()} file attached - ${selectedFile.name}]`;
-            const { userMessage, aiMessage, isFastMode } = await ChatCache.sendMessageFast(resolvedInfluencerId, messageContent, userId);
+            const result = await ChatCache.sendMessageFast(resolvedInfluencerId, messageContent, userId);
+            const { userMessage, aiMessage, isFastMode, responseType } = result as any;
+            
+            // Update animation type based on API response
+            console.log('🎭 Received response type (fallback):', responseType, 'Setting animation to:', responseType === 'audio' ? 'audio' : 'text');
+            setAiResponseType(responseType === 'audio' ? 'audio' : 'text');
             
             // Replace optimistic message with real response
             ChatCache.replaceOptimistic(resolvedInfluencerId, userId, tempId, userMessage, aiMessage);
             
-            console.log('🚀 Final fallback message sent successfully:', { isFastMode });
+            console.log('🚀 Final fallback message sent successfully:', { isFastMode, responseType });
           }
           
           // Reset file selection
@@ -567,12 +625,21 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
         }
       } else {
         // Regular text message
-        const { userMessage, aiMessage, isFastMode } = await ChatCache.sendMessageFast(resolvedInfluencerId, userMessageContent, userId);
+        const result = await ChatCache.sendMessageFast(resolvedInfluencerId, userMessageContent, userId);
+        const { userMessage, aiMessage, isFastMode, responseType } = result as any;
+        
+        // Update animation type based on API response
+        console.log('🎭 Received response type:', responseType, 'Setting animation to:', responseType === 'audio' ? 'audio' : 'text');
+        console.log('🎭 Full result object:', result);
+        console.log('🎭 AI message content preview:', aiMessage.content?.substring(0, 100));
+        console.log('🎭 AI message content length:', aiMessage.content?.length);
+        console.log('🎭 AI message has content:', !!aiMessage.content);
+        setAiResponseType(responseType === 'audio' ? 'audio' : 'text');
         
         // Replace optimistic message with real response
         ChatCache.replaceOptimistic(resolvedInfluencerId, userId, tempId, userMessage, aiMessage);
         
-        console.log('🚀 Text message sent successfully:', { isFastMode });
+        console.log('🚀 Text message sent successfully:', { isFastMode, responseType });
       }
         
     } catch (err) {
@@ -593,6 +660,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
       }
     } finally {
       setIsAiReplying(false);
+      setAiResponseType('text'); // Reset to default
       // Scroll to bottom after sending message and getting AI response
       setTimeout(() => {
         scrollToBottom();
@@ -818,12 +886,24 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                       </div>
                     )}
                     <div
-                      className={`p-4 rounded-2xl max-w-xs lg:max-w-md ${
+                      className={`p-4 rounded-2xl max-w-xs lg:max-w-md relative ${
                         message.sender === 'user'
                           ? 'bg-red-600 text-white'
-                          : 'bg-gray-800 text-white'
+                          : 'bg-gradient-to-br from-gray-800 to-gray-900 text-white shadow-lg'
                       }`}
                     >
+                      {/* Message type indicator */}
+                      {message.sender === 'ai' && (
+                        <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                          {message.type === 'image' ? (
+                            <span className="text-xs">🖼️</span>
+                          ) : (message.content && (message.content.startsWith('data:audio/') || message.content.startsWith('http'))) ? (
+                            <span className="text-xs">🎵</span>
+                          ) : (
+                            <span className="text-xs">💬</span>
+                          )}
+                        </div>
+                      )}
                       <MultimediaMessage 
                         message={message} 
                         sender={message.sender} 
@@ -854,11 +934,35 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
               />
             </div>
             <div className="p-4 rounded-2xl max-w-xs lg:max-w-md bg-secondary text-secondary-foreground">
-              <div className="flex items-center justify-center space-x-1">
-                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-              </div>
+              {aiResponseType === 'audio' ? (
+                /* Audio Generation Animation */
+                <div className="flex items-center justify-center space-x-3">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-1 h-3 bg-blue-500 rounded-full animate-pulse [animation-delay:-0.4s]"></div>
+                    <div className="w-1 h-5 bg-blue-500 rounded-full animate-pulse [animation-delay:-0.3s]"></div>
+                    <div className="w-1 h-4 bg-blue-500 rounded-full animate-pulse [animation-delay:-0.2s]"></div>
+                    <div className="w-1 h-6 bg-blue-500 rounded-full animate-pulse [animation-delay:-0.1s]"></div>
+                    <div className="w-1 h-4 bg-blue-500 rounded-full animate-pulse [animation-delay:0s]"></div>
+                    <div className="w-1 h-7 bg-blue-500 rounded-full animate-pulse [animation-delay:0.1s]"></div>
+                    <div className="w-1 h-3 bg-blue-500 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+                    <div className="w-1 h-5 bg-blue-500 rounded-full animate-pulse [animation-delay:0.3s]"></div>
+                    <div className="w-1 h-4 bg-blue-500 rounded-full animate-pulse [animation-delay:0.4s]"></div>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-blue-400 font-medium">🎵 Generating audio...</span>
+                    <span className="text-xs text-muted-foreground">Creating voice response</span>
+                  </div>
+                </div>
+              ) : (
+                /* Text Typing Animation */
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0s]"></div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
         conversation_id: conversationId,
         sender: 'user',
         content: userMessage.content,
+        type: userMessage.type || 'text', // Use correct database field name
       })
       .select()
       .single();
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
         conversation_id: conversationId,
         sender: 'influencer',
         content: aiMessage.content,
+        type: aiMessage.type || 'text', // Use correct database field name
       })
       .select()
       .single();

@@ -179,9 +179,14 @@ export async function POST(request: NextRequest) {
 
     const { body: aiData } = aiResult;
 
-    // Generate random number between 5-8 for audio responses
-    const shouldGenerateRandomAudio = Math.floor(Math.random() * 4) + 5; // 5-8
-    const shouldSendAudio = should_generate_tts || (msgs_cnt_by_user % shouldGenerateRandomAudio === 0);
+    // Configure audio generation - Always generate audio for every response
+    const shouldSendAudio = true; // Every AI response will be audio
+    console.log('🔊 Audio generation check:', {
+      msgs_cnt_by_user,
+      should_generate_tts,
+      shouldSendAudio: true,
+      mode: 'always_audio'
+    });
 
     // Create user message with structured data
     let userMessageContent = '';
@@ -211,7 +216,7 @@ export async function POST(request: NextRequest) {
       id: (Date.now() + 1).toString(),
       sender: 'influencer' as const,
       content: shouldSendAudio && aiData.audio_output_url ? aiData.audio_output_url : aiData.response,
-      type: shouldSendAudio ? 'audio' : 'text',
+      type: shouldSendAudio ? 'audio' : 'text', // Use proper type based on content
       created_at: new Date().toISOString(),
     };
 
@@ -257,7 +262,7 @@ export async function POST(request: NextRequest) {
           conversation_id: conversationId,
           sender: userMessage.sender,
           content: userMessage.content,
-          type: userMessage.type,
+          type: userMessage.type, // Use correct database field name
         }]);
 
       if (userError) {
@@ -272,7 +277,7 @@ export async function POST(request: NextRequest) {
           conversation_id: conversationId,
           sender: aiMessage.sender,
           content: aiMessage.content,
-          type: aiMessage.type,
+          type: aiMessage.type, // Use correct database field name
         }]);
 
       if (aiError) {
