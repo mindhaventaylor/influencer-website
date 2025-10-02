@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Pause, Mic, Image } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, Mic, Image, X, ZoomIn, ZoomOut, RotateCcw, Move } from 'lucide-react';
 
 interface MultimediaMessageProps {
   message: {
@@ -15,6 +15,108 @@ interface MultimediaMessageProps {
 const MultimediaMessage: React.FC<MultimediaMessageProps> = ({ message, sender }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  
+  // Image zoom and pan state
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('🖼️ Image modal state changed:', showImageModal);
+  }, [showImageModal]);
+
+  // Reset zoom and pan when modal opens/closes
+  useEffect(() => {
+    if (showImageModal) {
+      setZoomLevel(1);
+      setPanX(0);
+      setPanY(0);
+    }
+  }, [showImageModal]);
+
+  // Zoom functions
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev * 1.5, 5)); // Max 5x zoom
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev / 1.5, 0.5)); // Min 0.5x zoom
+  };
+
+  const handleResetZoom = () => {
+    setZoomLevel(1);
+    setPanX(0);
+    setPanY(0);
+  };
+
+  // Pan functions
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (zoomLevel > 1) {
+      setIsDragging(true);
+      setDragStart({ 
+        x: e.clientX - panX, 
+        y: e.clientY - panY 
+      });
+      console.log('🖱️ Mouse down on image - starting drag:', { 
+        clientX: e.clientX, 
+        clientY: e.clientY, 
+        panX, 
+        panY,
+        zoomLevel,
+        dragStart: { x: e.clientX - panX, y: e.clientY - panY }
+      });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && zoomLevel > 1) {
+      e.preventDefault();
+      e.stopPropagation();
+      const newPanX = e.clientX - dragStart.x;
+      const newPanY = e.clientY - dragStart.y;
+      
+      // Add some constraints to prevent panning too far
+      const maxPan = 300; // Increased maximum pan distance
+      const constrainedPanX = Math.max(-maxPan, Math.min(maxPan, newPanX));
+      const constrainedPanY = Math.max(-maxPan, Math.min(maxPan, newPanY));
+      
+      setPanX(constrainedPanX);
+      setPanY(constrainedPanY);
+      console.log('🖱️ Mouse move on image - dragging:', { 
+        clientX: e.clientX, 
+        clientY: e.clientY, 
+        newPanX, 
+        newPanY,
+        constrainedPanX,
+        constrainedPanY,
+        dragStart,
+        zoomLevel
+      });
+    }
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isDragging) {
+      console.log('🖱️ Mouse up - ending drag');
+      setIsDragging(false);
+    }
+  };
+
+  // Wheel zoom
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoomLevel(prev => Math.max(0.5, Math.min(5, prev * delta)));
+  };
 
   // Use the database type field as the primary source of truth
   const contentType = message.type || 'text';
@@ -146,6 +248,26 @@ const MultimediaMessage: React.FC<MultimediaMessageProps> = ({ message, sender }
       }
     };
   }, []); // Remove audioElement dependency to prevent cleanup on every change
+
+  // Handle ESC key to close image modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && showImageModal) {
+        setShowImageModal(false);
+      }
+    };
+
+    if (showImageModal) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [showImageModal]);
 
   const handleAudioPlay = async () => {
     console.log('🔊 AUDIO PLAY BUTTON CLICKED - DETAILED DEBUG:', {
@@ -466,6 +588,16 @@ const MultimediaMessage: React.FC<MultimediaMessageProps> = ({ message, sender }
     );
   }
 
+  // Helper function to get image source with proper MIME type
+  const getImageSrc = (imageContent: string) => {
+    if (imageContent.startsWith('data:')) {
+      return imageContent; // Already has MIME type
+    } else {
+      // Assume it's a common image format, you might want to store the MIME type separately
+      return `data:image/jpeg;base64,${imageContent}`;
+    }
+  };
+
   // Render image
   if (effectiveContentType === 'image') {
     console.log('🖼️ Rendering image:', {
@@ -478,20 +610,164 @@ const MultimediaMessage: React.FC<MultimediaMessageProps> = ({ message, sender }
     });
     
     return (
-      <div className="space-y-2">
-        {displayText && (
-          <div className="text-sm mb-2">
-            {displayText}
+      <>
+        <div className="space-y-2">
+          {displayText && (
+            <div className="text-sm mb-2">
+              {displayText}
+            </div>
+          )}
+          <div className="mt-3 relative group">
+            <img
+              src={getImageSrc(displayContent)}
+              alt="User uploaded image"
+              className="max-w-sm max-h-96 rounded-lg object-cover border border-border cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖼️ Image clicked, opening modal');
+                setShowImageModal(true);
+              }}
+            />
+            {/* Zoom overlay */}
+            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+              <div className="bg-white bg-opacity-90 rounded-full p-2">
+                <ZoomIn className="w-4 h-4 text-gray-700" />
+              </div>
+            </div>
+            {/* Test button for debugging */}
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖼️ Test button clicked, opening modal');
+                setShowImageModal(true);
+              }}
+              className="absolute bottom-2 right-2 bg-blue-500 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              Zoom
+            </button>
+          </div>
+        </div>
+
+        {/* Image Zoom Modal */}
+        {showImageModal && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+            style={{ zIndex: 9999 }}
+            onClick={(e) => {
+              console.log('🖼️ Modal background clicked, closing modal');
+              setShowImageModal(false);
+            }}
+          >
+            <div className="relative max-w-4xl max-h-[90vh] w-full mx-4">
+              {/* Control buttons */}
+              <div className="absolute top-4 left-4 z-10 flex gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleZoomIn();
+                  }}
+                  className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-colors"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleZoomOut();
+                  }}
+                  className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-colors"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleResetZoom();
+                  }}
+                  className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-colors"
+                  title="Reset Zoom"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Close button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  console.log('🖼️ Close button clicked');
+                  setShowImageModal(false);
+                }}
+                className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-colors"
+                style={{ zIndex: 10000 }}
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              {/* Zoom level indicator */}
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                {Math.round(zoomLevel * 100)}%
+              </div>
+              
+              {/* Image container with zoom and pan */}
+              <div 
+                className="w-full h-full overflow-hidden rounded-lg relative"
+                onWheel={handleWheel}
+                style={{ 
+                  userSelect: 'none'
+                }}
+              >
+                <img
+                  ref={imageRef}
+                  src={getImageSrc(displayContent)}
+                  alt="User uploaded image - full size"
+                  className={`w-full h-full object-contain ${
+                    isDragging ? 'transition-none' : 'transition-transform duration-200'
+                  }`}
+                  style={{
+                    transform: `scale(${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`,
+                    cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                    transformOrigin: 'center center',
+                    userSelect: 'none'
+                  }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  draggable={false}
+                />
+              </div>
+
+              {/* Instructions */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg text-sm">
+                <div className="flex items-center gap-4">
+                  <span>🖱️ Scroll to zoom</span>
+                  {zoomLevel > 1 && (
+                    <span className="text-yellow-300">🖱️ Drag to pan</span>
+                  )}
+                  <span>⌨️ ESC to close</span>
+                </div>
+              </div>
+
+              {/* Pan indicator when zoomed */}
+              {zoomLevel > 1 && (
+                <div className={`absolute top-16 left-1/2 transform -translate-x-1/2 z-10 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  isDragging 
+                    ? 'bg-red-500 bg-opacity-90 text-white' 
+                    : 'bg-yellow-500 bg-opacity-80 text-black'
+                }`}>
+                  <Move className="w-3 h-3 inline mr-1" />
+                  {isDragging ? 'Dragging...' : 'Drag to pan'}
+                </div>
+              )}
+            </div>
           </div>
         )}
-        <div className="mt-3">
-          <img
-            src={displayContent}
-            alt="User uploaded image"
-            className="max-w-sm max-h-96 rounded-lg object-cover border border-border"
-          />
-        </div>
-      </div>
+      </>
     );
   }
 

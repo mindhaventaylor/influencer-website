@@ -27,6 +27,12 @@ interface MultimediaResponse {
     security_check_result: any;
   };
   timings: {
+    retrieve_context?: number;
+    influencer_retrieve?: number;
+    format_pack?: number;
+    answer_with_rag_model_call?: number;
+    generate_influencer_answer?: number;
+    perform_security_check?: number;
     retrieval?: number;
     generation?: number;
     tts?: number;
@@ -41,6 +47,9 @@ interface MultimediaResponse {
   input_media_type: string;
   image_description?: string | null;
   should_generate_tts: boolean;
+  audio_transcription?: string | null;
+  image_transcription?: string | null;
+  tts_text_sent?: string | null;
 }
 
 export async function POST(request: NextRequest) {
@@ -149,8 +158,10 @@ export async function POST(request: NextRequest) {
     
     console.log('📤 Full AI Request Body:', JSON.stringify({
       ...aiRequest.body,
-      image_data: image_data ? `[BASE64 ${image_data.length} chars]` : undefined,
-      audio_data: audio_data ? `[BASE64 ${audio_data.length} chars]` : undefined
+      image_data: image_data ? `[${image_data.length} chars]` : undefined,
+      audio_data: audio_data ? `[${audio_data.length} chars]` : undefined,
+      chat_history_preview: aiRequest.body.chat_history?.slice(0, 3),
+      chat_history_length: aiRequest.body.chat_history?.length
     }, null, 2));
 
     // Call the external AI service
@@ -231,25 +242,28 @@ export async function POST(request: NextRequest) {
           const fallbackData = await fallbackResponse.json();
           console.log('✅ Fallback chat endpoint successful');
           
-          // Handle fallback response format
+          // Handle fallback response format - match the exact structure from your working response
           aiData = {
             response: fallbackData.response || fallbackData.message || fallbackData.content || 'Sorry, I had trouble responding.',
-            audio_output_url: fallbackData.audio_output_url || null,
-            audio_output: fallbackData.audio_output || null,
-            image_description: fallbackData.image_description || null,
-            summary_generated: false,
-            message_summary: '',
-            security: {
+            summary_generated: fallbackData.summary_generated || false,
+            message_summary: fallbackData.message_summary || '',
+            security: fallbackData.security || {
               security_check_passed: true,
               security_flags: [],
               security_retry_count: 0,
               security_check_result: {}
             },
-            timings: {},
-            timings_total: 0,
-            wall_time: 0,
-            input_media_type: input_media_type,
-            should_generate_tts: should_generate_tts
+            timings: fallbackData.timings || {},
+            timings_total: fallbackData.timings_total || 0,
+            wall_time: fallbackData.wall_time || 0,
+            audio_output_url: fallbackData.audio_output_url || null,
+            audio_output: fallbackData.audio_output || null,
+            input_media_type: fallbackData.input_media_type || input_media_type,
+            image_description: fallbackData.image_description || null,
+            should_generate_tts: fallbackData.should_generate_tts || should_generate_tts,
+            audio_transcription: fallbackData.audio_transcription || null,
+            image_transcription: fallbackData.image_transcription || null,
+            tts_text_sent: fallbackData.tts_text_sent || null
           };
         } else {
           const fallbackErrorText = await fallbackResponse.text().catch(() => 'Could not read error body');
