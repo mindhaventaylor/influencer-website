@@ -31,7 +31,27 @@ export default function AudioRecorder({ onAudioRecorded, onCancel }: AudioRecord
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      
+      // Try to use the best available audio format
+      let mimeType = 'audio/webm';
+      const supportedTypes = [
+        'audio/mp4',           // MP4/M4A - Best compatibility
+        'audio/mpeg',          // MP3 - Widely supported
+        'audio/wav',           // WAV - Uncompressed
+        'audio/wave',          // WAV alternative
+        'audio/webm;codecs=opus', // WebM with Opus
+        'audio/webm'           // WebM default
+      ];
+      
+      for (const type of supportedTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType = type;
+          console.log('✅ Using audio format:', type);
+          break;
+        }
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -42,7 +62,7 @@ export default function AudioRecorder({ onAudioRecorded, onCancel }: AudioRecord
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         const url = URL.createObjectURL(audioBlob);
         setAudioURL(url);
         
@@ -77,8 +97,10 @@ export default function AudioRecorder({ onAudioRecorded, onCancel }: AudioRecord
   };
 
   const handleSendRecording = () => {
-    if (audioChunksRef.current.length > 0) {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+    if (audioChunksRef.current.length > 0 && mediaRecorderRef.current) {
+      const mimeType = mediaRecorderRef.current.mimeType || 'audio/webm';
+      const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+      console.log('📤 Sending recorded audio:', { mimeType, size: audioBlob.size });
       onAudioRecorded(audioBlob);
     }
   };

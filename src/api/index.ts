@@ -219,7 +219,8 @@ const api = {
         error: result.error,
         hasData: !!result.data,
         firstMessage: result.data?.[0],
-        queryParams: { influencerId, userId, offset, limit }
+        queryParams: { influencerId, userId, offset, limit },
+        messageTypes: result.data?.map(m => ({ id: m.id, type: m.type, contentPreview: m.content?.substring(0, 50) }))
       });
       
       if (result.error) {
@@ -344,34 +345,60 @@ const api = {
 
   // 🚀 FAST MODE: Get AI response immediately without saving to database
   async postMessageFast(influencerId: string, content: string, userId: string) {
+    console.log('📤 postMessageFast called:', { influencerId, userId, contentLength: content.length });
+    
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
+      console.error('❌ No session found for postMessageFast');
       throw createUserFriendlyError('Please sign in to continue', 401);
     }
 
-    const response = await fetch('/api/post-message-fast', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        influencerId,
-        content,
-      }),
-    });
+    console.log('✅ Session found, calling /api/post-message-fast...');
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = getUserFriendlyError({
-        message: errorData.error || `HTTP ${response.status}`,
-        status: response.status
+    try {
+      const response = await fetch('/api/post-message-fast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          influencerId,
+          content,
+        }),
       });
-      throw createUserFriendlyError(errorMessage, response.status);
-    }
 
-    const { userMessage, aiMessage, isFastMode } = await response.json();
-    return { userMessage, aiMessage, isFastMode };
+      console.log('📥 API response:', { ok: response.ok, status: response.status });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('❌ API error:', { status: response.status, errorData });
+        const errorMessage = getUserFriendlyError({
+          message: errorData.error || `HTTP ${response.status}`,
+          status: response.status
+        });
+        throw createUserFriendlyError(errorMessage, response.status);
+      }
+
+      const responseData = await response.json();
+      const { userMessage, aiMessage, isFastMode, responseType, audioGenerated } = responseData;
+      console.log('✅ postMessageFast successful:', { 
+        isFastMode, 
+        responseType,
+        audioGenerated,
+        hasUserMessage: !!userMessage,
+        hasAiMessage: !!aiMessage
+      });
+      return { userMessage, aiMessage, isFastMode, responseType, audioGenerated };
+    } catch (error) {
+      console.error('❌ postMessageFast fetch error:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        influencerId,
+        userId
+      });
+      throw error;
+    }
   },
 
   // 💾 BACKGROUND SAVE: Save messages to database in background

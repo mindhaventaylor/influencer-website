@@ -94,12 +94,12 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
   // Use the personality prompt from the database (passed from the main function)
   const personalityPrompt = influencerModelPreset.system_prompt || `You are ${influencerName}, a helpful AI assistant.`;
 
-  // Configure audio generation based on message count (every 15 messages)
-  const shouldGenerateAudio = msgsCntByUser % 15 === 0;
+  // Configure audio generation with 50% probability
+  const shouldGenerateAudio = Math.random() < 0.50; // 50% chance of audio response
   console.log('🔊 Audio generation check (FAST MODE):', {
     msgs_cnt_by_user: msgsCntByUser,
     should_generate_tts: shouldGenerateAudio,
-    isDivisibleBy15: msgsCntByUser % 15 === 0,
+    probability: '50%',
     mode: shouldGenerateAudio ? 'audio_fast' : 'text_fast'
   });
 

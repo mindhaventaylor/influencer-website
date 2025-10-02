@@ -102,10 +102,25 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
   };
 
   const handleAudioRecorded = (audioBlob: Blob) => {
-    // Convert blob to file
-    const audioFile = new File([audioBlob], `voice-message-${Date.now()}.webm`, {
-      type: 'audio/webm'
+    // Convert blob to file with appropriate extension
+    const blobType = audioBlob.type || 'audio/webm';
+    const extension = blobType.includes('mpeg') || blobType.includes('mp3') ? 'mp3' :
+                     blobType.includes('wav') || blobType.includes('wave') ? 'wav' : 
+                     blobType.includes('mp4') || blobType.includes('m4a') ? 'm4a' :
+                     blobType.includes('webm') ? 'webm' : 
+                     blobType.includes('ogg') ? 'ogg' : 'audio';
+    
+    const audioFile = new File([audioBlob], `voice-message-${Date.now()}.${extension}`, {
+      type: blobType
     });
+    
+    console.log('🎤 Audio recorded:', { 
+      type: blobType, 
+      size: audioBlob.size, 
+      extension: extension,
+      fileName: audioFile.name 
+    });
+    
     setSelectedFile(audioFile);
     setInputMediaType('audio');
     setIsRecording(false);
@@ -399,11 +414,19 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
     
     if (selectedFile && userMessageContent.trim()) {
       // Both media (image/audio) and text - store as JSON in content
-      messageContent = JSON.stringify({
+      const jsonContent: any = {
         text: userMessageContent,
-        media: base64Data,
         hasText: true
-      });
+      };
+      
+      // Add the appropriate media field based on type
+      if (inputMediaType === 'image') {
+        jsonContent.image = base64Data;
+      } else if (inputMediaType === 'audio') {
+        jsonContent.audio = base64Data;
+      }
+      
+      messageContent = JSON.stringify(jsonContent);
       // Use the actual media type with '_with_text' suffix
       messageType = `${inputMediaType}_with_text`;
     } else if (selectedFile) {
@@ -492,29 +515,83 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
             msgs_cnt_by_user: messages.filter(msg => msg.sender === 'user').length,
             input_media_type: inputMediaType, // Use inputMediaType (audio/image/text) not messageType
             user_query: userMessageContent || '',
-            should_generate_tts: (messages.filter(msg => msg.sender === 'user').length + 1) % 15 === 0, // TTS every 15th message
+            should_generate_tts: Math.random() < 0.50, // 50% probability of audio response
             elevenlabs_voice_id: process.env.ELEVENLABS_VOICE_ID,
             ...(inputMediaType === 'image' && { image_data: base64Data }),
             ...(inputMediaType === 'audio' && { audio_data: base64Data })
           };
 
           console.log('🚀 Sending multimedia request:', { 
-            inputMediaType, 
+            inputMediaType,
+            messageType,
             hasImage: !!multimediaRequest.image_data,
             hasAudio: !!multimediaRequest.audio_data,
-            base64Length: base64Data.length 
+            base64Length: base64Data?.length || 0,
+            input_media_type_sent: multimediaRequest.input_media_type,
+            user_query: multimediaRequest.user_query,
+            should_generate_tts: multimediaRequest.should_generate_tts
+          });
+          
+          console.log('📤 Request validation:', {
+            isAudio: inputMediaType === 'audio',
+            isImage: inputMediaType === 'image',
+            hasAudioData: !!multimediaRequest.audio_data,
+            hasImageData: !!multimediaRequest.image_data,
+            selectedFileType: selectedFile?.type,
+            selectedFileName: selectedFile?.name
           });
 
-          const response = await fetch('/api/post-multimedia-message', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(multimediaRequest),
+          let requestBody;
+          try {
+            requestBody = JSON.stringify(multimediaRequest);
+            console.log('✅ Request body serialized:', {
+              size: requestBody.length,
+              sizeKB: (requestBody.length / 1024).toFixed(2) + ' KB',
+              sizeMB: (requestBody.length / 1024 / 1024).toFixed(2) + ' MB'
+            });
+          } catch (stringifyError) {
+            console.error('❌ Failed to stringify request:', stringifyError);
+            throw new Error('Failed to prepare request');
+          }
+
+          console.log('🌐 About to call /api/post-multimedia-message...');
+          
+          let response;
+          try {
+            response = await fetch('/api/post-multimedia-message', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`,
+              },
+              body: requestBody,
+            });
+          } catch (fetchError) {
+            console.error('❌ Fetch failed immediately:', {
+              error: fetchError,
+              errorMessage: fetchError instanceof Error ? fetchError.message : String(fetchError),
+              errorName: fetchError instanceof Error ? fetchError.name : 'Unknown',
+              requestSize: requestBody.length
+            });
+            throw fetchError;
+          }
+
+          console.log('📥 Multimedia API response:', {
+            ok: response.ok,
+            status: response.status,
+            statusText: response.statusText
           });
 
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const errorBody = await response.json().catch(() => ({ error: 'Could not parse error' }));
+            console.error('❌ Multimedia API error response:', {
+              status: response.status,
+              statusText: response.statusText,
+              errorBody,
+              inputMediaType,
+              hasAudio: !!multimediaRequest.audio_data
+            });
+            throw new Error(`HTTP ${response.status}: ${errorBody.error || response.statusText}`);
           }
 
           const { userMessage, aiMessage, audioGenerated } = await response.json();
@@ -528,9 +605,19 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
           resetFileSelection();
           return;
         } catch (multimediaError) {
-          console.log('⚠️ Multimedia API failed, falling back to regular chat:', multimediaError);
+          console.error('❌ Multimedia API failed, falling back to regular chat:', {
+            error: multimediaError,
+            errorMessage: multimediaError instanceof Error ? multimediaError.message : String(multimediaError),
+            inputMediaType,
+            hasFile: !!selectedFile,
+            fileType: selectedFile?.type,
+            fileName: selectedFile?.name
+          });
           
-          // Fallback: Save the image message directly to database
+          console.warn('⚠️ FALLBACK MODE ACTIVATED - Multimedia API is not working properly!');
+          console.warn('⚠️ This means AI_SERVICE_URL might not be configured or the service is down');
+          
+          // Fallback: Save the media message directly to database
           try {
             if (!session?.access_token) {
               throw new Error('No authentication session available');
@@ -580,13 +667,22 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
             });
             
             if (saveResponse.ok) {
-              console.log('🚀 Image message saved to database via fallback');
+              console.log('🚀 Media message saved to database via fallback');
               
-              // Create a simple AI response
+              // Create a simple AI response based on media type
+              let fallbackContent = '';
+              if (inputMediaType === 'image') {
+                fallbackContent = 'I can see your image! How can I help you with it?';
+              } else if (inputMediaType === 'audio') {
+                fallbackContent = 'I received your audio message! Unfortunately, I\'m having trouble processing it right now. Could you try typing your message instead?';
+              } else {
+                fallbackContent = 'I received your message! How can I help you?';
+              }
+              
               const aiMessage = {
                 id: (Date.now() + 1).toString(),
                 sender: 'influencer' as const,
-                content: 'I can see your image! How can I help you with it?',
+                content: fallbackContent,
                 type: 'text' as const,
                 created_at: new Date().toISOString()
               };
@@ -643,7 +739,21 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
         }
       } else {
         // Regular text message
+        console.log('📤 Sending text message via ChatCache.sendMessageFast...', {
+          influencerId: resolvedInfluencerId,
+          userId,
+          messageLength: userMessageContent.length
+        });
+        
         const result = await ChatCache.sendMessageFast(resolvedInfluencerId, userMessageContent, userId);
+        
+        console.log('📥 Received result from sendMessageFast:', {
+          hasUserMessage: !!result.userMessage,
+          hasAiMessage: !!result.aiMessage,
+          isFastMode: result.isFastMode,
+          responseType: result.responseType
+        });
+        
         const { userMessage, aiMessage, isFastMode, responseType } = result as any;
         
         // Update animation type based on API response
@@ -894,7 +1004,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                     key={message.id}
                     className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'} ${isDifferentUser ? 'mb-2' : ''}`}
                   >
-                    {message.sender === 'ai' && (
+                    {(message.sender === 'ai' || message.sender === 'influencer') && (
                       <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-red-500 mr-3 flex-shrink-0">
                         <img 
                           src="/default_avatar.png" 
@@ -911,7 +1021,7 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                       }`}
                     >
                       {/* Message type indicator */}
-                      {message.sender === 'ai' && (
+                      {(message.sender === 'ai' || message.sender === 'influencer') && (
                         <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
                           {message.type === 'image' ? (
                             <span className="text-xs">🖼️</span>
