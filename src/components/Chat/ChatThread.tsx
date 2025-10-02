@@ -617,6 +617,11 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
           console.warn('⚠️ FALLBACK MODE ACTIVATED - Multimedia API is not working properly!');
           console.warn('⚠️ This means AI_SERVICE_URL might not be configured or the service is down');
           
+          // Show toast for multimedia API failure
+          toast.error('📎 Media processing failed. Sending as text message instead.', {
+            duration: 4000
+          });
+          
           // Fallback: Save the media message directly to database
           try {
             if (!session?.access_token) {
@@ -719,6 +724,11 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
           } catch (fallbackError) {
             console.error('❌ Fallback also failed:', fallbackError);
             
+            // Show toast for fallback failure
+            toast.error('⚠️ Media processing failed. Sending as text message.', {
+              duration: 4000
+            });
+            
             // Final fallback: just text message
             const messageContent = `${userMessageContent || ''} [${inputMediaType.toUpperCase()} file attached - ${selectedFile.name}]`;
             const result = await ChatCache.sendMessageFast(resolvedInfluencerId, messageContent, userId);
@@ -779,12 +789,41 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
       ChatCache.removeMessageById(resolvedInfluencerId, userId, tempId);
       setMessages(prev => prev.filter(msg => msg.id !== tempId));
       
-      // Show toast notification instead of blocking error
+      // Show appropriate toast notification based on error type
       const errorStatus = (err as any)?.status || (err as any)?.statusCode;
-      if (errorStatus === 402 || userFriendlyError.toLowerCase().includes('token')) {
-        toast.error('Insufficient tokens. Please purchase more tokens to continue chatting.');
+      const errorMessage = (err as any)?.message || '';
+      
+      if (errorStatus === 402 || userFriendlyError.toLowerCase().includes('token') || errorMessage.toLowerCase().includes('token')) {
+        toast.error('💳 Insufficient tokens. Please purchase more tokens to continue chatting.', {
+          duration: 5000,
+          action: {
+            label: 'Get Tokens',
+            onClick: () => {
+              // You can add navigation to purchase page here
+              console.log('Navigate to purchase page');
+            }
+          }
+        });
+      } else if (errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
+        toast.error('⏰ Request timed out. Please try again.', {
+          duration: 4000
+        });
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        toast.error('🌐 Network error. Please check your connection and try again.', {
+          duration: 4000
+        });
+      } else if (errorStatus === 401 || errorMessage.includes('auth')) {
+        toast.error('🔐 Authentication error. Please refresh the page and try again.', {
+          duration: 4000
+        });
+      } else if (errorStatus === 500 || errorMessage.includes('server')) {
+        toast.error('🔧 Server error. Please try again in a moment.', {
+          duration: 4000
+        });
       } else {
-        toast.error(userFriendlyError);
+        toast.error(`❌ ${userFriendlyError}`, {
+          duration: 4000
+        });
       }
     } finally {
       setIsAiReplying(false);

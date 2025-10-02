@@ -356,6 +356,10 @@ const api = {
     console.log('✅ Session found, calling /api/post-message-fast...');
 
     try {
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch('/api/post-message-fast', {
         method: 'POST',
         headers: {
@@ -366,7 +370,10 @@ const api = {
           influencerId,
           content,
         }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
       console.log('📥 API response:', { ok: response.ok, status: response.status });
 
@@ -380,7 +387,19 @@ const api = {
         throw createUserFriendlyError(errorMessage, response.status);
       }
 
-      const responseData = await response.json();
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (jsonError) {
+        console.error('❌ Failed to parse JSON response:', {
+          jsonError,
+          responseStatus: response.status,
+          responseHeaders: Object.fromEntries(response.headers.entries()),
+          responseText: await response.text().catch(() => 'Could not read response text')
+        });
+        throw new Error('Invalid response format from server');
+      }
+      
       const { userMessage, aiMessage, isFastMode, responseType, audioGenerated } = responseData;
       console.log('✅ postMessageFast successful:', { 
         isFastMode, 
@@ -394,10 +413,31 @@ const api = {
       console.error('❌ postMessageFast fetch error:', {
         error,
         errorMessage: error instanceof Error ? error.message : String(error),
+        errorName: error instanceof Error ? error.name : 'Unknown',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        errorType: typeof error,
+        errorStringified: JSON.stringify(error),
         influencerId,
-        userId
+        userId,
+        url: '/api/post-message-fast',
+        method: 'POST'
       });
-      throw error;
+      
+      // Handle specific error types
+      let userFriendlyError;
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          userFriendlyError = 'Request timed out. Please try again.';
+        } else if (error.message.includes('fetch')) {
+          userFriendlyError = 'Network error. Please check your connection and try again.';
+        } else {
+          userFriendlyError = error.message;
+        }
+      } else {
+        userFriendlyError = 'Failed to send message. Please try again.';
+      }
+      
+      throw new Error(userFriendlyError);
     }
   },
 

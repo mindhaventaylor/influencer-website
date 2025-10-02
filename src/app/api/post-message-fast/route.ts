@@ -35,27 +35,39 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
   // --- ensure we don't mutate priorMessages ---
   const chronological = priorMessages.slice().reverse();
   
-  // chat history pairs for backend - filter out multimedia messages to avoid base64 data
+  // chat history pairs for backend - AGGRESSIVELY filter out multimedia messages to avoid base64 data
   const chatHistory = [...chronological, { sender: 'user', content: latestUserMessage }]
     .filter((msg: any) => {
       // Only include text messages, exclude pure image and audio messages (with base64)
       const messageType = msg.type || 'text';
-      return messageType === 'text' || 
+      const hasBase64 = msg.content && (
+        msg.content.includes('data:image/') || 
+        msg.content.includes('data:audio/') || 
+        msg.content.includes('data:video/') ||
+        msg.content.includes('base64') ||
+        msg.content.length > 1000 // Exclude very long messages that might contain base64
+      );
+      
+      return (messageType === 'text' || 
              messageType === 'image_with_text' || 
-             messageType === 'audio_with_text';
+             messageType === 'audio_with_text') && !hasBase64;
     })
-    .slice(-10) // Limit to last 10 messages
+    .slice(-5) // Reduce to last 5 messages to save tokens
     .map((msg: any) => {
       // For media_with_text messages, extract only the text part
       if ((msg.type === 'image_with_text' || msg.type === 'audio_with_text') && typeof msg.content === 'string') {
         try {
           const parsed = JSON.parse(msg.content);
-          return [msg.sender === 'user' ? 'user' : 'assistant', parsed.text || msg.content];
+          const textOnly = parsed.text || msg.content;
+          // Truncate text to save tokens
+          return [msg.sender === 'user' ? 'user' : 'assistant', textOnly.substring(0, 200)];
         } catch {
-          return [msg.sender === 'user' ? 'user' : 'assistant', msg.content];
+          // If parsing fails, use content but truncate
+          return [msg.sender === 'user' ? 'user' : 'assistant', msg.content.substring(0, 200)];
         }
       }
-      return [msg.sender === 'user' ? 'user' : 'assistant', msg.content];
+      // Truncate all content to save tokens
+      return [msg.sender === 'user' ? 'user' : 'assistant', msg.content.substring(0, 200)];
     });
 
   // Get authoritative user message count for the whole conversation from DB
@@ -121,13 +133,58 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
   console.log('🤖 AI REQUEST DEBUG (FAST MODE):');
   console.log('📝 User ID:', userId);
   console.log('🎭 Influencer Name:', influencerName);
-  console.log('💬 Chat History:', JSON.stringify(chatHistory, null, 2));
+  console.log('💬 Chat History (filtered for tokens):', JSON.stringify(chatHistory, null, 2));
   console.log('📊 Messages Count:', msgsCntByUser);
   console.log('🔊 Audio Generation:', shouldGenerateAudio);
+  console.log('💰 Token Optimization:', {
+    originalMessageCount: chronological.length,
+    filteredMessageCount: chatHistory.length,
+    totalContentLength: chatHistory.reduce((sum, msg) => sum + msg[1].length, 0),
+    hasBase64Data: chatHistory.some(msg => msg[1].includes('data:') || msg[1].includes('base64'))
+  });
   console.log('🎯 Full Request Body:', JSON.stringify(requestBody, null, 2));
 
   const apiBearerToken = getApiBearerToken();
   console.log('🔑 Using API Bearer Token:', apiBearerToken ? `${apiBearerToken.substring(0, 10)}...` : 'NOT FOUND');
+  
+  if (!apiBearerToken) {
+    console.error('❌ API Bearer Token is missing! This will cause the external API call to fail.');
+    console.error('❌ Config object:', {
+      hasConfig: !!config,
+      hasAi: !!config.ai,
+      hasApiBearerToken: !!config.ai?.apiBearerToken,
+      configKeys: Object.keys(config || {}),
+      aiKeys: Object.keys(config.ai || {})
+    });
+    
+    // Return a fallback response immediately if no API token
+    console.log('🔄 No API Bearer Token available, providing local fallback response');
+    const localResponse = generateLocalFallbackResponse(latestUserMessage, influencerName);
+    
+    return {
+      response: localResponse,
+      audio_output_url: null,
+      shouldGenerateAudio: false
+    };
+  }
+  
+  // Additional check: Don't send if chat history contains base64 data
+  const hasBase64InHistory = chatHistory.some(msg => 
+    msg[1].includes('data:') || 
+    msg[1].includes('base64') || 
+    msg[1].length > 500
+  );
+  
+  if (hasBase64InHistory) {
+    console.warn('⚠️ Chat history contains base64 data, using fallback to save tokens');
+    const localResponse = generateLocalFallbackResponse(latestUserMessage, influencerName);
+    
+    return {
+      response: localResponse,
+      audio_output_url: null,
+      shouldGenerateAudio: false
+    };
+  }
   
   // Try multimedia endpoint first (for audio generation)
   const aiServiceUrl = process.env.AI_SERVICE_URL;
@@ -214,6 +271,15 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
     clearTimeout(fallbackTimeoutId);
   } catch (fallbackError: any) {
     clearTimeout(fallbackTimeoutId);
+    console.error('❌ Fallback chat endpoint error:', {
+      error: fallbackError,
+      errorMessage: fallbackError.message,
+      errorName: fallbackError.name,
+      errorStack: fallbackError.stack,
+      url: 'http://influencer-brain-alb-1945743263.us-east-1.elb.amazonaws.com/chat',
+      apiBearerToken: apiBearerToken ? `${apiBearerToken.substring(0, 10)}...` : 'NOT FOUND'
+    });
+    
     if (fallbackError.name === 'AbortError') {
       console.error('⏰ Fallback chat endpoint timeout (25s)');
       // Provide a local fallback response instead of throwing an error
@@ -382,15 +448,36 @@ export async function POST(request: NextRequest) {
     console.log(`🚀 FAST MODE: Adding ${Math.round(randomDelay)}ms delay...`);
     await new Promise(resolve => setTimeout(resolve, randomDelay));
     
-    const aiReplyResult = await generateInfluencerReply(
-      { system_prompt: influencer.prompt, ...influencer.model_preset },
-      priorMessages,
-      content,
-      userId,
-      influencer.name,
-      conversationId // Use the real conversation ID
-    );
-    console.log('🚀 FAST MODE: AI reply generated successfully!');
+    let aiReplyResult;
+    try {
+      aiReplyResult = await generateInfluencerReply(
+        { system_prompt: influencer.prompt, ...influencer.model_preset },
+        priorMessages,
+        content,
+        userId,
+        influencer.name,
+        conversationId // Use the real conversation ID
+      );
+      console.log('🚀 FAST MODE: AI reply generated successfully!');
+    } catch (aiError: any) {
+      console.error('❌ Error generating AI reply:', {
+        error: aiError,
+        errorMessage: aiError.message,
+        errorStack: aiError.stack,
+        influencerId,
+        userId,
+        content: content?.substring(0, 100)
+      });
+      
+      // Provide a fallback response
+      const fallbackResponse = generateLocalFallbackResponse(content, influencer.name);
+      aiReplyResult = {
+        response: fallbackResponse,
+        audio_output_url: null,
+        shouldGenerateAudio: false
+      };
+      console.log('🔄 Using fallback response due to AI generation error');
+    }
 
     // Use the AI reply result's shouldGenerateAudio flag
     const shouldSendAudio = aiReplyResult.shouldGenerateAudio;
@@ -521,8 +608,16 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error in post-message-fast function:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('❌ Error in post-message-fast function:', {
+      error: error,
+      errorMessage: error.message,
+      errorStack: error.stack,
+      errorName: error.name
+    });
+    return NextResponse.json({ 
+      error: error.message || 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }
 
