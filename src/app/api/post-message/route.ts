@@ -16,9 +16,28 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
   // --- ensure we don't mutate priorMessages ---
   const chronological = priorMessages.slice().reverse();
   
-  // chat history pairs for backend
+  // chat history pairs for backend - filter out multimedia messages to avoid base64 data
   const chatHistory = [...chronological, { sender: 'user', content: latestUserMessage }]
-    .map((msg: any) => [msg.sender === 'user' ? 'user' : 'assistant', msg.content]);
+    .filter((msg: any) => {
+      // Only include text messages, exclude pure image and audio messages (with base64)
+      const messageType = msg.type || 'text';
+      return messageType === 'text' || 
+             messageType === 'image_with_text' || 
+             messageType === 'audio_with_text';
+    })
+    .slice(-10) // Limit to last 10 messages
+    .map((msg: any) => {
+      // For media_with_text messages, extract only the text part
+      if ((msg.type === 'image_with_text' || msg.type === 'audio_with_text') && typeof msg.content === 'string') {
+        try {
+          const parsed = JSON.parse(msg.content);
+          return [msg.sender === 'user' ? 'user' : 'assistant', parsed.text || msg.content];
+        } catch {
+          return [msg.sender === 'user' ? 'user' : 'assistant', msg.content];
+        }
+      }
+      return [msg.sender === 'user' ? 'user' : 'assistant', msg.content];
+    });
 
   // Get authoritative user message count for the whole conversation from DB
   const { count: userMsgCount, error: countError } = await supabaseService
@@ -55,6 +74,15 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
   // Use the personality prompt from the database
   const personalityPrompt = influencerModelPreset.system_prompt || `You are ${influencerName}, a helpful AI assistant.`;
 
+  // Configure audio generation with 50% probability
+  const shouldGenerateAudio = Math.random() < 0.50; // 50% chance of audio response
+  console.log('🔊 Audio generation check:', {
+    msgs_cnt_by_user: msgsCntByUser,
+    should_generate_tts: shouldGenerateAudio,
+    probability: '50%',
+    mode: shouldGenerateAudio ? 'audio' : 'text'
+  });
+
   const requestBody = {
     user_id: userId,
     creator_id: config.ai.creator_id, // Use AI creator_id from config
@@ -63,12 +91,59 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
     chat_history: chatHistory,
     msgs_cnt_by_user: msgsCntByUser,
     msgs_cnt_total: msgsCntTotal, // NEW
+    input_media_type: 'text',
+    user_query: latestUserMessage,
+    should_generate_tts: shouldGenerateAudio,
+    elevenlabs_voice_id: process.env.ELEVENLABS_VOICE_ID,
   };
 
   const apiBearerToken = getApiBearerToken();
   console.log('🔑 Using API Bearer Token:', apiBearerToken ? `${apiBearerToken.substring(0, 10)}...` : 'NOT FOUND');
   
-  const response = await fetch('http://influencer-brain-alb-1945743263.us-east-1.elb.amazonaws.com/chat', {
+  // Try multimedia endpoint first (for audio generation)
+  const aiServiceUrl = process.env.AI_SERVICE_URL;
+  let response;
+  let data;
+
+  if (aiServiceUrl) {
+    try {
+      console.log('🔊 Attempting multimedia endpoint for audio generation...');
+      response = await fetch(aiServiceUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.AI_SERVICE_TOKEN}`,
+        },
+        body: JSON.stringify({
+          isBase64Encoded: false,
+          body: requestBody
+        })
+      });
+
+      if (response.ok) {
+        data = await response.json();
+        console.log('✅ Multimedia endpoint successful');
+        
+        // Handle the multimedia response format
+        if (data.statusCode === 200 && data.body) {
+          const { body } = data;
+          return {
+            response: body.response || body.message || body.content || 'Sorry, I had trouble responding.',
+            audio_output_url: body.audio_output_url,
+            shouldGenerateAudio: shouldGenerateAudio
+          };
+        }
+      } else {
+        console.log('⚠️ Multimedia endpoint failed, falling back to chat endpoint');
+      }
+    } catch (multimediaError) {
+      console.log('⚠️ Multimedia endpoint error, falling back to chat endpoint:', multimediaError);
+    }
+  }
+
+  // Fallback to regular chat endpoint
+  console.log('🔊 Using fallback chat endpoint...');
+  response = await fetch('http://influencer-brain-alb-1945743263.us-east-1.elb.amazonaws.com/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -92,8 +167,24 @@ async function generateInfluencerReply(influencerModelPreset: any, priorMessages
     throw new Error(`Custom API error: ${response.statusText} (${response.status}) - ${errorText}`);
   }
 
-  const data = await response.json();
-  return data.response || data.message || data.content || 'Sorry, I had trouble responding.';
+  data = await response.json();
+  
+  console.log('🎵 Chat Endpoint Response:', {
+    hasResponse: !!data.response,
+    hasAudioUrl: !!data.audio_output_url,
+    hasBase64Audio: !!data.audio_base64,
+    responseKeys: Object.keys(data),
+    audioUrlPreview: data.audio_output_url?.substring(0, 50),
+    base64Preview: data.audio_base64?.substring(0, 50)
+  });
+  
+  // Chat endpoint may also return audio data
+  return {
+    response: data.response || data.message || data.content || 'Sorry, I had trouble responding.',
+    audio_output_url: data.audio_output_url,
+    audio_base64: data.audio_base64 || data.audio_data || data.base64_audio,
+    shouldGenerateAudio: false
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -202,6 +293,7 @@ export async function POST(request: NextRequest) {
         conversation_id: conversationId,
         sender: 'user',
         content: content,
+        type: 'text', // User messages are always text
       })
       .select()
       .single();
@@ -230,7 +322,7 @@ export async function POST(request: NextRequest) {
     console.log('Fetching prior messages...');
     const { data: priorMessages, error: priorMessagesError } = await supabaseService
       .from('chat_messages')
-      .select('sender, content')
+      .select('sender, content, type')
       .eq('user_id', userId)
       .eq('influencer_id', influencerId)
       .order('created_at', { ascending: false })
@@ -243,7 +335,13 @@ export async function POST(request: NextRequest) {
 
     // 4. Generate AI reply
     console.log('Generating AI reply...');
-    const influencerReplyContent = await generateInfluencerReply(
+    
+    // Add random delay to simulate realistic response time (2-5 seconds)
+    const randomDelay = Math.random() * 3000 + 2000; // 2-5 seconds
+    console.log(`Adding ${Math.round(randomDelay)}ms delay...`);
+    await new Promise(resolve => setTimeout(resolve, randomDelay));
+    
+    const aiReplyResult = await generateInfluencerReply(
       { system_prompt: influencer.prompt, ...influencer.model_preset },
       priorMessages,
       content,
@@ -252,6 +350,97 @@ export async function POST(request: NextRequest) {
       conversationId
     );
     console.log('AI reply generated.');
+
+    // Respect should_generate_tts parameter and message count
+    const shouldSendAudio = aiReplyResult.shouldGenerateAudio;
+    console.log(`🔊 Response type based on TTS logic: ${shouldSendAudio ? 'AUDIO' : 'TEXT'}`);
+    
+    // Generate base64 audio content for testing
+    const generateMockBase64Audio = () => {
+      // Generate different audio based on random seed for variety
+      const randomSeed = Math.random().toString(36).substring(7);
+      console.log(`🎵 Generating mock audio with seed: ${randomSeed}`);
+      
+      // Generate a simple beep sound as base64 WAV
+      // This is a 1-second 440Hz sine wave at 44.1kHz sample rate
+      const sampleRate = 44100;
+      const duration = 1; // 1 second
+      const frequency = 440; // A4 note
+      const samples = sampleRate * duration;
+      const buffer = new ArrayBuffer(44 + samples * 2); // WAV header + samples
+      const view = new DataView(buffer);
+      
+      // WAV header
+      const writeString = (offset: number, string: string) => {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      };
+      
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + samples * 2, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(36, 'data');
+      view.setUint32(40, samples * 2, true);
+      
+      // Generate sine wave samples
+      for (let i = 0; i < samples; i++) {
+        const sample = Math.sin(2 * Math.PI * frequency * i / sampleRate) * 0.3;
+        view.setInt16(44 + i * 2, sample * 32767, true);
+      }
+      
+      // Convert to base64
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+      return `data:audio/wav;base64,${base64}`;
+    };
+    
+    let aiMessageContent;
+    let responseType;
+    
+    if (shouldSendAudio) {
+      // Priority: 1) Base64 from API, 2) URL from API, 3) Mock base64
+      if (aiReplyResult.audio_base64) {
+        aiMessageContent = aiReplyResult.audio_base64;
+        responseType = 'audio';
+        console.log('🎵 Using REAL AI base64 audio from API response');
+      } else if (aiReplyResult.audio_output_url) {
+        aiMessageContent = aiReplyResult.audio_output_url;
+        responseType = 'audio';
+        console.log('🎵 Using REAL AI audio URL:', aiReplyResult.audio_output_url);
+      } else {
+        aiMessageContent = generateMockBase64Audio();
+        responseType = 'audio';
+        console.log('🎵 AI audio not available, using mock base64 audio');
+      }
+    } else {
+      aiMessageContent = aiReplyResult.response || 'Hello! This is a text response.';
+      responseType = 'text';
+    }
+    
+    const aiMessageType = shouldSendAudio ? 'audio' : 'text'; // Use proper type based on content
+
+    console.log('🔊 AI message configuration:', {
+      shouldSendAudio,
+      hasRealAudioUrl: !!aiReplyResult.audio_output_url,
+      hasRealBase64Audio: !!aiReplyResult.audio_base64,
+      messageType: aiMessageType,
+      responseType: responseType,
+      contentLength: aiMessageContent?.length,
+      isMockAudio: !aiReplyResult.audio_output_url && !aiReplyResult.audio_base64,
+      isBase64Audio: aiMessageContent?.startsWith('data:audio/'),
+      isHttpAudio: aiMessageContent?.startsWith('http'),
+      contentPreview: aiMessageContent?.substring(0, 50),
+      audioSource: aiReplyResult.audio_base64 ? 'API_BASE64' : 
+                   aiReplyResult.audio_output_url ? 'API_URL' : 'MOCK_BASE64'
+    });
 
     // 5. Insert AI message (using service client to bypass RLS)
     console.log('Attempting to insert AI message...');
@@ -262,7 +451,8 @@ export async function POST(request: NextRequest) {
         influencer_id: influencerId,
         conversation_id: conversationId,
         sender: 'influencer',
-        content: influencerReplyContent,
+        content: aiMessageContent,
+        type: aiMessageType, // Use correct database field name
       })
       .select()
       .single();
@@ -304,7 +494,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       userMessage,
-      aiMessage
+      aiMessage,
+      audioGenerated: shouldSendAudio,
+      responseType: responseType,
+      isMockAudio: shouldSendAudio && !aiReplyResult.audio_output_url
     });
 
   } catch (error: any) {

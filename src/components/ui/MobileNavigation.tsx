@@ -22,8 +22,6 @@ export default function MobileNavigation({
 
   const navigationItems = [
     { id: 'ChatList', icon: Home, label: 'Home', key: 'nav-home' },
-    { id: 'ChatThread', icon: MessageCircle, label: 'Chat', key: 'nav-chat', onClick: onGoToChat },
-    { id: 'Call', icon: Phone, label: 'Call', key: 'nav-call', onClick: () => setShowCallOptions(true) },
     { id: 'ProfileScreen', icon: User, label: 'Profile', key: 'nav-profile' },
     { id: 'SettingsScreen', icon: Settings, label: 'Settings', key: 'nav-settings' },
   ];

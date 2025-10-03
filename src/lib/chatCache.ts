@@ -82,7 +82,15 @@ export const ChatCache = {
 
   // Threads
   peekThread(influencerId: string, userId: string): Message[] | null {
-    const key = makeThreadKey(influencerId, userId);
+    // 🚀 FIX: Extract UUID from combined influencer ID string if needed
+    let cleanInfluencerId = influencerId;
+    if (influencerId && influencerId.includes(':')) {
+      const parts = influencerId.split(':');
+      if (parts.length >= 2) {
+        cleanInfluencerId = parts[parts.length - 1];
+      }
+    }
+    const key = makeThreadKey(cleanInfluencerId, userId);
     return messagesByThreadId.get(key) || null;
   },
 
@@ -93,18 +101,40 @@ export const ChatCache = {
       throw new Error(`Invalid parameters: influencerId=${influencerId}, userId=${userId}`);
     }
 
-    const key = makeThreadKey(influencerId, userId);
+    // 🚀 FIX: Extract UUID from combined influencer ID string if needed (format: "Name:UUID")
+    let cleanInfluencerId = influencerId;
+    if (influencerId.includes(':')) {
+      const parts = influencerId.split(':');
+      if (parts.length >= 2) {
+        // Extract the UUID part (last part after the colon)
+        cleanInfluencerId = parts[parts.length - 1];
+        console.log('🔄 ChatCache: Extracted UUID from combined ID:', { 
+          original: influencerId, 
+          extracted: cleanInfluencerId 
+        });
+      }
+    }
+
+    const key = makeThreadKey(cleanInfluencerId, userId);
     if (messagesByThreadId.has(key)) {
       return messagesByThreadId.get(key)!;
     }
     if (!messagesPromises.has(key)) {
-      console.log('🔄 Fetching chat thread for:', { influencerId, userId, limit });
+      console.log('🔄 Fetching chat thread for:', { influencerId: cleanInfluencerId, userId, limit });
       const p = api
-        .getChatThread(influencerId, userId, limit, 0) // 🚀 OPTIMIZATION: Load fewer messages initially
+        .getChatThread(cleanInfluencerId, userId, limit, 0) // 🚀 OPTIMIZATION: Load fewer messages initially
         .then(async ({ data, error }) => {
           if (error) {
-            console.error('Error fetching chat thread:', { error, influencerId, userId });
-            throw error;
+            console.error('Error fetching chat thread:', { 
+              error, 
+              errorMessage: error.message,
+              errorCode: error.code,
+              influencerId: cleanInfluencerId, 
+              userId,
+              influencerIdType: typeof cleanInfluencerId,
+              userIdType: typeof userId
+            });
+            throw new Error(error.message || 'Failed to fetch chat thread');
           }
           const msgs = data || [];
           
@@ -115,7 +145,7 @@ export const ChatCache = {
           if (reversedMsgs.length === 0) {
             try {
               console.log('No messages found, initializing conversation...');
-              await api.initializeConversation(influencerId);
+              await api.initializeConversation(cleanInfluencerId);
               console.log('Conversation initialized successfully');
             } catch (initError) {
               console.warn('Failed to initialize conversation:', initError);
@@ -127,7 +157,19 @@ export const ChatCache = {
           return reversedMsgs;
         })
         .catch((error) => {
-          console.error('ChatCache getThread error:', error);
+          console.error('ChatCache getThread error:', {
+            error,
+            errorType: typeof error,
+            errorConstructor: error?.constructor?.name,
+            errorMessage: error?.message,
+            errorStack: error?.stack,
+            errorKeys: error ? Object.keys(error) : 'no error object',
+            errorStringified: JSON.stringify(error, null, 2),
+            influencerId: cleanInfluencerId,
+            originalInfluencerId: influencerId,
+            userId,
+            key
+          });
           // Return empty array on error to prevent infinite loading
           const emptyMsgs: Message[] = [];
           messagesByThreadId.set(key, emptyMsgs);
