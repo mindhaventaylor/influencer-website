@@ -1038,6 +1038,13 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                 const previousMessage = array[index - 1];
                 const isDifferentUser = previousMessage && previousMessage.sender !== message.sender;
                 
+                // Check if this is a media message (image or audio)
+                const messageType = message.type || 'text';
+                const isMediaMessage = messageType === 'image' || 
+                                       messageType === 'audio' || 
+                                       messageType === 'image_with_text' || 
+                                       messageType === 'audio_with_text';
+                
                 return message.content && message.content.trim() && (
                   <div
                     key={message.id}
@@ -1053,14 +1060,18 @@ const ChatThread = ({ onGoBack, influencerId, userToken, userId }: ChatThreadPro
                       </div>
                     )}
                     <div
-                      className={`p-4 rounded-2xl max-w-xs lg:max-w-md relative ${
-                        message.sender === 'user'
-                          ? 'bg-red-600 text-white'
-                          : 'bg-gradient-to-br from-gray-800 to-gray-900 text-white shadow-lg'
+                      className={`${
+                        isMediaMessage 
+                          ? 'max-w-xs lg:max-w-md relative' // No bubble for media
+                          : `p-4 rounded-2xl max-w-xs lg:max-w-md relative ${
+                              message.sender === 'user'
+                                ? 'bg-red-600 text-white'
+                                : 'bg-gradient-to-br from-gray-800 to-gray-900 text-white shadow-lg'
+                            }` // Bubble for text
                       }`}
                     >
-                      {/* Message type indicator */}
-                      {(message.sender === 'ai' || message.sender === 'influencer') && (
+                      {/* Message type indicator - only for text messages */}
+                      {!isMediaMessage && (message.sender === 'ai' || message.sender === 'influencer') && (
                         <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
                           {message.type === 'image' ? (
                             <span className="text-xs">🖼️</span>
